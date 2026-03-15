@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F3F4F6;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numbers for all monetary columns */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  #sidebar,
+  #toolbar {
+    display: none !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  .invoice-container {
+    page-break-inside: avoid;
+  }
+
+  #invoice-template {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Show only the invoice template */
+  body > * {
+    display: none;
+  }
+
+  #root {
+    display: block;
+  }
+}
