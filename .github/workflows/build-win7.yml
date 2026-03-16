@@ -1,0 +1,43 @@
+name: Build Windows 7 Compatible EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-win7:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Downgrade to Electron 22 — last version that supports Windows 7/8
+      - name: Pin Electron 22 (Windows 7 compatible)
+        run: npm install electron@22.3.27 --save-dev --legacy-peer-deps
+
+      - name: Build (Vite + TypeScript)
+        run: npm run build
+
+      - name: Package — Windows (Electron 22)
+        run: npx electron-builder --win --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GST-Invoice-Generator-win7-compatible
+          path: dist/*.exe
+          retention-days: 30
