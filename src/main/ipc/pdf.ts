@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, dialog, shell } from 'electron'
+import { ipcMain, BrowserWindow, dialog, shell, IpcMainEvent } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { is } from '@electron-toolkit/utils'
@@ -19,7 +19,7 @@ async function printHiddenWindow(
     hiddenWin = new BrowserWindow({
       show: false,
       width: 794,
-      height: 1123,
+      height: 6000,   // tall enough for many items; printToPDF handles pagination
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
         contextIsolation: true,
@@ -34,19 +34,36 @@ async function printHiddenWindow(
       hiddenWin.loadFile(path.join(__dirname, '../renderer/index.html'), { hash })
     }
 
+    // Wait for PrintPage to send its rendered height via IPC
+    let heightPx = 0
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Print page load timeout')), 20000)
-      hiddenWin!.webContents.once('did-finish-load', () => {
-        setTimeout(() => { clearTimeout(timeout); resolve() }, 2500)
-      })
+      const timeout = setTimeout(() => reject(new Error('Print page load timeout')), 30000)
+
+      const onHeight = (_e: IpcMainEvent, h: number) => {
+        console.log('[PDF] received print height:', h, 'px')
+        heightPx = h > 100 ? h : 1200 // fallback ~318mm
+        clearTimeout(timeout)
+        resolve()
+      }
+      ipcMain.once('pdf:height-ready', onHeight)
+
       hiddenWin!.webContents.once('render-process-gone', (_e, details) => {
+        ipcMain.removeListener('pdf:height-ready', onHeight)
         clearTimeout(timeout)
         reject(new Error(`Print renderer crashed: ${details.reason}`))
       })
     })
 
+    // Convert px → mm (96dpi: 1px = 25.4/96 mm), add 12mm buffer
+    const heightMm = Math.ceil((heightPx * 25.4) / 96) + 12
+
+    // Inject @page CSS so the browser itself sets the exact page dimensions
+    await hiddenWin.webContents.insertCSS(
+      `@page { size: 210mm ${heightMm}mm !important; margin: 0 !important; }
+       html, body { margin: 0 !important; padding: 0 !important; }`
+    )
+
     const pdfBuffer = await hiddenWin.webContents.printToPDF({
-      format: 'A4',
       printBackground: true,
       margins: { marginType: 'none' }
     })

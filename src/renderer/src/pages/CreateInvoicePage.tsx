@@ -290,7 +290,14 @@ export default function CreateInvoicePage(): React.ReactElement {
             <Panel title="Invoice Details">
               <div className="grid grid-cols-2 gap-2">
                 <FieldRow label="Invoice No.">
-                  <input ref={firstRef} className={`${inputCls} bg-gray-50`} value={invoiceNumber} readOnly />
+                  <input
+                    ref={firstRef}
+                    className={inputCls}
+                    value={invoiceNumber}
+                    onChange={(e) => !disabled && setInvoiceNumber(e.target.value)}
+                    disabled={disabled}
+                    placeholder="e.g. INV-001"
+                  />
                 </FieldRow>
                 <FieldRow label="Date">
                   <input type="date" className={inputCls} value={invoiceDate}

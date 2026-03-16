@@ -26,24 +26,27 @@ export default function PrintPage(): React.ReactElement {
     })
   }, [id])
 
+  // Send height to main process once template is fully painted
+  useEffect(() => {
+    if (!invoice || !business) return
+    // rAF ensures DOM is painted, then 200ms for any font/image layout
+    const raf = requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = document.getElementById('invoice-template')
+        const h = el ? el.scrollHeight : document.body.scrollHeight
+        window.api.reportPrintHeight(h)
+      }, 200)
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [invoice, business])
+
   if (!invoice || !business) return <div style={{ padding: 24 }}>Loading...</div>
 
   return (
     <>
-      {/* Force exact A4, no margins, single page */}
       <style>{`
-        @page {
-          size: 210mm 297mm;
-          margin: 0;
-        }
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 210mm;
-          height: 297mm;
-          overflow: hidden;
-          background: white;
-        }
+        @page { size: 210mm auto; margin: 0; }
+        html, body { margin: 0; padding: 0; background: white; }
       `}</style>
       <InvoiceTemplate invoice={invoice} business={business} logoDataUrl={logoDataUrl} />
     </>

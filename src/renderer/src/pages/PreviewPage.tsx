@@ -77,11 +77,11 @@ export default function PreviewPage(): React.ReactElement {
   const isDraft = invoice.status === 'DRAFT' && !invoice.cancelled
 
   return (
-    <>
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Toolbar — hidden on print */}
       <div
         id="toolbar"
-        className="flex items-center gap-3 px-6 py-3 bg-white border-b border-border sticky top-0 z-10"
+        className="flex items-center gap-3 px-6 py-3 bg-white border-b border-border flex-shrink-0"
       >
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft size={14} /> Back
@@ -105,23 +105,26 @@ export default function PreviewPage(): React.ReactElement {
         </Button>
       </div>
 
-      {/* Status badge */}
-      <div className="px-6 pt-4 flex items-center gap-3">
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded
-            ${invoice.cancelled ? 'bg-red-100 text-red-800'
-              : invoice.status === 'FINAL' ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-            }`}
-        >
-          {invoice.cancelled ? 'CANCELLED' : invoice.status}
-        </span>
-      </div>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Status badge */}
+        <div className="px-6 pt-4 flex items-center gap-3">
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded
+              ${invoice.cancelled ? 'bg-red-100 text-red-800'
+                : invoice.status === 'FINAL' ? 'bg-green-100 text-green-800'
+                : 'bg-yellow-100 text-yellow-800'
+              }`}
+          >
+            {invoice.cancelled ? 'CANCELLED' : invoice.status}
+          </span>
+        </div>
 
-      {/* A4 Preview */}
-      <div className="p-6 flex justify-center">
-        <div className="shadow-lg">
-          <InvoiceTemplate invoice={invoice} business={business} logoDataUrl={logoDataUrl} />
+        {/* A4 Preview */}
+        <div className="p-6 flex justify-center">
+          <div className="shadow-lg">
+            <InvoiceTemplate invoice={invoice} business={business} logoDataUrl={logoDataUrl} />
+          </div>
         </div>
       </div>
 
@@ -142,6 +145,6 @@ export default function PreviewPage(): React.ReactElement {
           It cannot be edited after finalization. Continue?
         </p>
       </Modal>
-    </>
+    </div>
   )
 }

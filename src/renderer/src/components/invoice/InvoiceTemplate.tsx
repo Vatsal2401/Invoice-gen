@@ -19,28 +19,28 @@ const S = {
   },
   cell: {
     border: '1px solid #000',
-    padding: '2px 4px',
-    fontSize: '10px',
+    padding: '5px 7px',
+    fontSize: '11px',
     verticalAlign: 'top' as const
   },
   cellR: {
     border: '1px solid #000',
-    padding: '2px 4px',
-    fontSize: '10px',
+    padding: '5px 7px',
+    fontSize: '11px',
     textAlign: 'right' as const,
     verticalAlign: 'top' as const
   },
   cellC: {
     border: '1px solid #000',
-    padding: '2px 4px',
-    fontSize: '10px',
+    padding: '5px 7px',
+    fontSize: '11px',
     textAlign: 'center' as const,
     verticalAlign: 'top' as const
   },
   th: {
     border: '1px solid #000',
-    padding: '3px 4px',
-    fontSize: '10px',
+    padding: '6px 7px',
+    fontSize: '11px',
     fontWeight: 'bold' as const,
     backgroundColor: '#f5f5f5',
     textAlign: 'left' as const,
@@ -48,8 +48,8 @@ const S = {
   },
   thR: {
     border: '1px solid #000',
-    padding: '3px 4px',
-    fontSize: '10px',
+    padding: '6px 7px',
+    fontSize: '11px',
     fontWeight: 'bold' as const,
     backgroundColor: '#f5f5f5',
     textAlign: 'right' as const,
@@ -74,13 +74,12 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       id="invoice-template"
       style={{
         width: '210mm',
-        height: '297mm',
-        overflow: 'hidden',       /* never spill to page 2 */
+        minHeight: '297mm',
         margin: '0',
         fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '10px',
+        fontSize: '11px',
         backgroundColor: '#fff',
-        padding: '6mm',
+        padding: '10mm 14mm',
         boxSizing: 'border-box'
       }}
     >
@@ -88,8 +87,8 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       {invoice.cancelled === 1 && (
         <div style={{
           background: '#DC2626', color: '#fff', textAlign: 'center',
-          fontWeight: 'bold', fontSize: '13px', padding: '4px',
-          marginBottom: '4px', letterSpacing: '2px'
+          fontWeight: 'bold', fontSize: '14px', padding: '6px',
+          marginBottom: '6px', letterSpacing: '2px'
         }}>
           *** CANCELLED INVOICE ***
         </div>
@@ -97,10 +96,10 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
 
       {/* Company Logo */}
       {logoDataUrl && (
-        <div style={{ textAlign: 'center', marginBottom: '4px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
           <img
             src={logoDataUrl}
-            style={{ maxHeight: '50px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+            style={{ maxHeight: '60px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
             alt="Logo"
           />
         </div>
@@ -108,9 +107,9 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
 
       {/* ── Title ── */}
       <div style={{
-        textAlign: 'center', fontWeight: 'bold', fontSize: '13px',
-        border: '1px solid #000', padding: '4px',
-        marginBottom: '0', letterSpacing: '1px'
+        textAlign: 'center', fontWeight: 'bold', fontSize: '15px',
+        border: '1px solid #000', padding: '7px 4px',
+        marginBottom: '0', letterSpacing: '2px'
       }}>
         Tax Invoice
       </div>
@@ -120,14 +119,14 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
         <tbody>
           <tr>
             {/* Seller */}
-            <td style={{ ...S.cell, width: '50%', borderRight: '1px solid #000', padding: '4px 6px' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '2px' }}>
+            <td style={{ ...S.cell, width: '50%', borderRight: '1px solid #000', padding: '8px 10px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '4px' }}>
                 {business.business_name}
               </div>
-              {business.address1 && <div>{business.address1}</div>}
-              {business.address2 && <div>{business.address2}</div>}
-              <div>{[business.city, business.state, business.pincode].filter(Boolean).join(', ')}</div>
-              {business.gstin && <div><strong>GSTIN/UIN:</strong> {business.gstin}</div>}
+              {business.address1 && <div style={{ marginBottom: '2px' }}>{business.address1}</div>}
+              {business.address2 && <div style={{ marginBottom: '2px' }}>{business.address2}</div>}
+              <div style={{ marginBottom: '2px' }}>{[business.city, business.state, business.pincode].filter(Boolean).join(', ')}</div>
+              {business.gstin && <div style={{ marginTop: '4px' }}><strong>GSTIN/UIN:</strong> {business.gstin}</div>}
               {business.pan    && <div><strong>PAN:</strong> {business.pan}</div>}
               {business.phone  && <div><strong>Ph:</strong> {business.phone}</div>}
               {business.email  && <div><strong>Email:</strong> {business.email}</div>}
@@ -158,17 +157,17 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       <table style={{ ...S.table, borderTop: 'none' }}>
         <tbody>
           <tr>
-            <td style={{ ...S.cell, width: '50%', borderRight: '1px solid #000', padding: '4px 6px' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '2px' }}>Consignee (Ship to)</div>
-              <div style={{ fontWeight: 'bold' }}>{invoice.ship_to_name || invoice.buyer_name}</div>
-              <div>{invoice.ship_to_address || invoice.buyer_address}</div>
+            <td style={{ ...S.cell, width: '50%', borderRight: '1px solid #000', padding: '8px 10px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '4px', textDecoration: 'underline' }}>Consignee (Ship to)</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{invoice.ship_to_name || invoice.buyer_name}</div>
+              <div style={{ marginBottom: '2px' }}>{invoice.ship_to_address || invoice.buyer_address}</div>
               {invoice.ship_to_gstin && <div><strong>GSTIN:</strong> {invoice.ship_to_gstin}</div>}
               {invoice.ship_to_state && <div><strong>State:</strong> {invoice.ship_to_state}</div>}
             </td>
-            <td style={{ ...S.cell, width: '50%', padding: '4px 6px' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '2px' }}>Buyer (Bill to)</div>
-              <div style={{ fontWeight: 'bold' }}>{invoice.buyer_name}</div>
-              <div>{invoice.buyer_address}</div>
+            <td style={{ ...S.cell, width: '50%', padding: '8px 10px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '4px', textDecoration: 'underline' }}>Buyer (Bill to)</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{invoice.buyer_name}</div>
+              <div style={{ marginBottom: '2px' }}>{invoice.buyer_address}</div>
               {invoice.buyer_gstin    && <div><strong>GSTIN:</strong> {invoice.buyer_gstin}</div>}
               {invoice.buyer_pan      && <div><strong>PAN:</strong> {invoice.buyer_pan}</div>}
               {invoice.buyer_state    && (
@@ -303,20 +302,20 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       <table style={{ ...S.table, borderTop: 'none' }}>
         <tbody>
           <tr>
-            <td style={{ ...S.cell, width: '55%', borderRight: '1px solid #000', padding: '4px 6px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '3px' }}>Company's Bank Details</div>
-              {business.bank_name      && <div>Bank Name: {business.bank_name}</div>}
-              {business.account_number && <div>A/c No.: {business.account_number}</div>}
-              {business.ifsc_code      && <div>Branch &amp; IFS Code: {business.branch} / {business.ifsc_code}</div>}
+            <td style={{ ...S.cell, width: '55%', borderRight: '1px solid #000', padding: '8px 10px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Company's Bank Details</div>
+              {business.bank_name      && <div style={{ marginBottom: '2px' }}>Bank Name: {business.bank_name}</div>}
+              {business.account_number && <div style={{ marginBottom: '2px' }}>A/c No.: {business.account_number}</div>}
+              {business.ifsc_code      && <div style={{ marginBottom: '2px' }}>Branch &amp; IFS Code: {business.branch} / {business.ifsc_code}</div>}
               {business.swift_code     && <div>SWIFT Code: {business.swift_code}</div>}
             </td>
-            <td style={{ ...S.cell, width: '45%', textAlign: 'right', verticalAlign: 'bottom', padding: '4px 8px', minHeight: '60px' }}>
-              <div style={{ marginBottom: '24px' }}>for {business.business_name}</div>
-              <div style={{ borderTop: '1px solid #000', display: 'inline-block', paddingTop: '2px', minWidth: '120px' }}>
+            <td style={{ ...S.cell, width: '45%', textAlign: 'right', verticalAlign: 'bottom', padding: '8px 12px', height: '80px' }}>
+              <div style={{ marginBottom: '32px' }}>for {business.business_name}</div>
+              <div style={{ borderTop: '1px solid #000', display: 'inline-block', paddingTop: '3px', minWidth: '140px' }}>
                 Authorised Signatory
               </div>
               {business.signatory_name && (
-                <div style={{ fontSize: '9px', marginTop: '1px' }}>{business.signatory_name}</div>
+                <div style={{ fontSize: '10px', marginTop: '2px' }}>{business.signatory_name}</div>
               )}
             </td>
           </tr>
@@ -327,7 +326,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       <table style={{ ...S.table, borderTop: 'none' }}>
         <tbody>
           <tr>
-            <td style={{ ...S.cell, fontStyle: 'italic', fontSize: '9px', padding: '3px 6px' }}>
+            <td style={{ ...S.cell, fontStyle: 'italic', fontSize: '10px', padding: '6px 10px' }}>
               Declaration: We declare that this invoice shows the actual price of the goods described
               and that all particulars are true and correct.
             </td>
@@ -336,7 +335,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       </table>
 
       {/* ── Footer ── */}
-      <div style={{ textAlign: 'center', marginTop: '6px', fontSize: '9px', color: '#555' }}>
+      <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '10px', color: '#555' }}>
         This is a Computer Generated Invoice
       </div>
     </div>
@@ -345,12 +344,12 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
 
 // ── Helper: 2-col meta row ──
 function MetaRow({ l, v, l2, v2 }: { l: string; v: string; l2: string; v2: string }): React.ReactElement {
-  const cellStyle = { border: '1px solid #000', padding: '2px 4px', fontSize: '10px' }
+  const cellStyle = { border: '1px solid #000', padding: '5px 7px', fontSize: '11px' }
   return (
     <tr>
-      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const }}>{l}</td>
+      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const, backgroundColor: '#fafafa' }}>{l}</td>
       <td style={{ ...cellStyle, width: '25%' }}>{v}</td>
-      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const }}>{l2}</td>
+      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const, backgroundColor: '#fafafa' }}>{l2}</td>
       <td style={{ ...cellStyle, width: '25%' }}>{v2}</td>
     </tr>
   )

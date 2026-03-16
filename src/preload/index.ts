@@ -39,6 +39,7 @@ const api = {
     ipcRenderer.invoke('payments:ledger', customerId, fromDate, toDate),
 
   // PDF
+  reportPrintHeight: (height: number) => ipcRenderer.send('pdf:height-ready', height),
   exportPDF: (invoiceId: number) => ipcRenderer.invoke('pdf:export', invoiceId),
   exportLedgerPDF: (customerId: number, customerName: string, fromDate: string, toDate: string) =>
     ipcRenderer.invoke('pdf:exportLedger', customerId, customerName, fromDate, toDate),
