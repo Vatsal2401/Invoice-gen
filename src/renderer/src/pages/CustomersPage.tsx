@@ -1,11 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Search, FilePlus, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Archive, Search, FilePlus, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Customer, CustomerInput } from '../types'
 import { useStore } from '../store/useStore'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
+import apiClient from '../lib/apiClient'
+import { useQuery } from '../lib/useQuery'
+import { useQueryCache } from '../store/useQueryCache'
 
 const EMPTY_FORM: CustomerInput = {
   name: '',
@@ -20,32 +23,23 @@ const EMPTY_FORM: CustomerInput = {
 }
 
 const PAGE_SIZE = 17
+const CUSTOMERS_KEY = '/invoice/customers'
 
 export default function CustomersPage(): React.ReactElement {
   const navigate = useNavigate()
   const { showToast } = useStore()
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const { invalidate } = useQueryCache()
+  const { data: customers = [], refetch } = useQuery<Customer[]>(CUSTOMERS_KEY)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState<CustomerInput>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null)
+  const [archiveConfirm, setArchiveConfirm] = useState<Customer | null>(null)
   const firstRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const loadCustomers = useCallback(async () => {
-    const res = await window.api.listCustomers()
-    if (res.success && res.data) setCustomers(res.data)
-  }, [])
-
-  useEffect(() => { loadCustomers() }, [loadCustomers])
-
-  // Reset to page 1 when search changes
-  useEffect(() => { setPage(1) }, [search])
-
-  // Ctrl+F to focus search
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.ctrlKey && e.key === 'f') { e.preventDefault(); searchRef.current?.focus() }
@@ -85,46 +79,44 @@ export default function CustomersPage(): React.ReactElement {
     if (!form.name.trim()) { showToast('error', 'Customer name is required'); return }
     setSaving(true)
     try {
-      let res
       if (editCustomer) {
-        res = await window.api.updateCustomer(editCustomer.id, form as Record<string, unknown>)
+        await apiClient.patch(`/invoice/customers/${editCustomer.id}`, form)
+        showToast('success', 'Customer updated')
       } else {
-        res = await window.api.createCustomer(form as Record<string, unknown>)
+        await apiClient.post('/invoice/customers', form)
+        showToast('success', 'Customer added')
       }
-      if (res.success) {
-        showToast('success', editCustomer ? 'Customer updated' : 'Customer added')
-        setModalOpen(false)
-        loadCustomers()
-      } else {
-        showToast('error', res.message || 'Save failed')
-      }
+      setModalOpen(false)
+      invalidate(CUSTOMERS_KEY)
+      refetch()
+    } catch {
+      showToast('error', 'Save failed')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (): Promise<void> => {
-    if (!deleteConfirm) return
-    const res = await window.api.deleteCustomer(deleteConfirm.id)
-    if (res.success) {
-      showToast('success', 'Customer deleted')
-      setDeleteConfirm(null)
-      loadCustomers()
-    } else {
-      showToast('error', res.message || 'Delete failed')
+  const handleArchive = async (): Promise<void> => {
+    if (!archiveConfirm) return
+    try {
+      await apiClient.delete(`/invoice/customers/${archiveConfirm.id}`)
+      showToast('success', 'Customer archived')
+      setArchiveConfirm(null)
+      invalidate(CUSTOMERS_KEY)
+      refetch()
+    } catch {
+      showToast('error', 'Archive failed')
     }
   }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Page header */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-border flex-shrink-0">
         <h1 className="text-xl font-bold text-text-primary">Customers</h1>
         <Button onClick={openAdd} size="sm"><Plus size={14} /> Add Customer</Button>
       </div>
 
       <div className="flex-1 overflow-auto p-6 pb-0">
-        {/* Search bar */}
         <div className="mb-4 flex items-center gap-2 max-w-sm">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
@@ -138,16 +130,12 @@ export default function CustomersPage(): React.ReactElement {
             />
           </div>
           {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="text-xs text-text-secondary hover:text-text-primary"
-            >
+            <button onClick={() => setSearch('')} className="text-xs text-text-secondary hover:text-text-primary">
               Clear
             </button>
           )}
         </div>
 
-        {/* Table */}
         <div className="bg-bg-card rounded-lg border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b-2 border-border">
@@ -177,32 +165,17 @@ export default function CustomersPage(): React.ReactElement {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="View Ledger"
-                        onClick={() => navigate(`/customers/${c.id}/ledger`)}
-                      >
+                      <Button variant="ghost" size="sm" title="View Ledger" onClick={() => navigate(`/customers/${c.id}/ledger`)}>
                         <BookOpen size={13} /> Ledger
                       </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        title="New Invoice for this customer"
-                        onClick={() => navigate(`/invoices/new?customerId=${c.id}`)}
-                      >
+                      <Button variant="ghost" size="sm" title="New Invoice for this customer" onClick={() => navigate(`/invoices/new?customerId=${c.id}`)}>
                         <FilePlus size={13} /> Invoice
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                         <Pencil size={13} /> Edit
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-danger hover:bg-red-50"
-                        onClick={() => setDeleteConfirm(c)}
-                      >
-                        <Trash2 size={13} /> Delete
+                      <Button variant="ghost" size="sm" className="text-danger hover:bg-red-50" onClick={() => setArchiveConfirm(c)}>
+                        <Archive size={13} /> Archive
                       </Button>
                     </div>
                   </td>
@@ -211,10 +184,8 @@ export default function CustomersPage(): React.ReactElement {
             </tbody>
           </table>
         </div>
-
       </div>
 
-      {/* Pagination — pinned to bottom */}
       <div className="flex-shrink-0 border-t border-border bg-white px-6 py-2 flex items-center justify-between text-sm text-text-secondary">
         <span>
           {filtered.length === 0
@@ -223,28 +194,13 @@ export default function CustomersPage(): React.ReactElement {
         </span>
         {totalPages > 1 && (
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="p-1 rounded hover:bg-gray-100 disabled:opacity-40">
               <ChevronLeft size={16} />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-7 h-7 rounded text-xs font-medium
-                  ${p === page ? 'bg-accent text-white' : 'hover:bg-gray-100'}`}
-              >
-                {p}
-              </button>
+              <button key={p} onClick={() => setPage(p)} className={`w-7 h-7 rounded text-xs font-medium ${p === page ? 'bg-accent text-white' : 'hover:bg-gray-100'}`}>{p}</button>
             ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1 rounded hover:bg-gray-100 disabled:opacity-40">
               <ChevronRight size={16} />
             </button>
           </div>
@@ -252,17 +208,8 @@ export default function CustomersPage(): React.ReactElement {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal
-        open={modalOpen}
-        title={editCustomer ? 'Edit Customer' : 'Add Customer'}
-        onClose={() => setModalOpen(false)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} loading={saving}>Save</Button>
-          </>
-        }
-      >
+      <Modal open={modalOpen} title={editCustomer ? 'Edit Customer' : 'Add Customer'} onClose={() => setModalOpen(false)}
+        footer={<><Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button><Button onClick={handleSave} loading={saving}>Save</Button></>}>
         <div className="grid grid-cols-1 gap-4">
           <Input ref={firstRef} label="Name *" value={form.name} onChange={handleChange('name')} />
           <Input label="Address" value={form.address} onChange={handleChange('address')} />
@@ -278,19 +225,10 @@ export default function CustomersPage(): React.ReactElement {
         </div>
       </Modal>
 
-      {/* Delete Confirm Modal */}
-      <Modal
-        open={!!deleteConfirm}
-        title="Delete Customer"
-        onClose={() => setDeleteConfirm(null)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-            <Button variant="danger" onClick={handleDelete}>Delete</Button>
-          </>
-        }
-      >
-        <p>Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This cannot be undone.</p>
+      {/* Archive Confirm Modal */}
+      <Modal open={!!archiveConfirm} title="Archive Customer" onClose={() => setArchiveConfirm(null)}
+        footer={<><Button variant="secondary" onClick={() => setArchiveConfirm(null)}>Cancel</Button><Button variant="danger" onClick={handleArchive}>Archive</Button></>}>
+        <p>Are you sure you want to archive <strong>{archiveConfirm?.name}</strong>? Their invoices and payment history will be preserved.</p>
       </Modal>
     </div>
   )

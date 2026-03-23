@@ -3,8 +3,13 @@ import type { BusinessProfile } from '../types'
 import { useStore } from '../store/useStore'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import apiClient from '../lib/apiClient'
+import { useQuery } from '../lib/useQuery'
+import { useQueryCache } from '../store/useQueryCache'
 
-const EMPTY: Omit<BusinessProfile, 'id' | 'last_invoice_number'> = {
+type ProfileForm = Omit<BusinessProfile, 'id' | 'user_id' | 'last_invoice_number'>
+
+const EMPTY: ProfileForm = {
   business_name: '',
   address1: '',
   address2: '',
@@ -22,55 +27,75 @@ const EMPTY: Omit<BusinessProfile, 'id' | 'last_invoice_number'> = {
   swift_code: '',
   signatory_name: '',
   invoice_prefix: 'INV',
-  logo_path: ''
+  logo_url: ''
 }
+
+const PROFILE_KEY = '/invoice/profile'
 
 export default function SetupPage(): React.ReactElement {
   const { showToast, setBusiness } = useStore()
-  const [form, setForm] = useState(EMPTY)
+  const { invalidate } = useQueryCache()
+  const { data: profile } = useQuery<BusinessProfile>(PROFILE_KEY)
+  const [form, setForm] = useState<ProfileForm>(EMPTY)
   const [saving, setSaving] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string>('')
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const firstRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => { firstRef.current?.focus() }, [])
+
+  // Populate form when profile loads (cached or fresh)
   useEffect(() => {
-    firstRef.current?.focus()
-    window.api.getBusinessProfile().then(async (res) => {
-      if (res.success && res.data) {
-        const { id: _id, last_invoice_number: _lno, ...rest } = res.data
-        setForm(rest)
-        if (rest.logo_path) {
-          const logoRes = await window.api.readLogo(rest.logo_path)
-          if (logoRes.success && logoRes.data) setLogoPreview(logoRes.data as string)
-        }
-        setBusiness(res.data)
-      }
-    })
-  }, [setBusiness])
+    if (!profile) return
+    const { id: _id, user_id: _uid, last_invoice_number: _lno, ...rest } = profile
+    setForm({ ...EMPTY, ...rest })
+    if (profile.logo_url) setLogoPreview(profile.logo_url)
+    setBusiness(profile)
+  }, [profile, setBusiness])
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }))
   }
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const filePath = (file as File & { path?: string }).path || ''
-    setForm((f) => ({ ...f, logo_path: filePath }))
-    setLogoPreview(URL.createObjectURL(file))
+  const handlePickLogo = async (): Promise<void> => {
+    const result = await window.api.pickLogoFile()
+    if (result.canceled || !result.dataUrl) return
+
+    setLogoPreview(result.dataUrl)
+    setUploadingLogo(true)
+    try {
+      // Convert data URL to Blob and upload
+      const arr = result.dataUrl.split(',')
+      const mime = result.mimeType || 'image/png'
+      const bstr = atob(arr[1])
+      const u8arr = new Uint8Array(bstr.length)
+      for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i)
+      const blob = new Blob([u8arr], { type: mime })
+      const formData = new FormData()
+      formData.append('file', blob, result.fileName || 'logo.png')
+
+      const { data } = await apiClient.post<{ logo_url: string }>('/invoice/profile/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setForm((f) => ({ ...f, logo_url: data.logo_url }))
+      invalidate(PROFILE_KEY)
+      showToast('success', 'Logo uploaded')
+    } catch {
+      showToast('error', 'Logo upload failed. Check S3 configuration.')
+    } finally {
+      setUploadingLogo(false)
+    }
   }
 
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     try {
-      const res = await window.api.saveBusinessProfile(form as Record<string, unknown>)
-      if (res.success) {
-        showToast('success', 'Business profile saved')
-        const refreshed = await window.api.getBusinessProfile()
-        if (refreshed.success && refreshed.data) setBusiness(refreshed.data)
-      } else {
-        showToast('error', res.message || 'Save failed')
-      }
+      const { data } = await apiClient.put<BusinessProfile>('/invoice/profile', form)
+      invalidate(PROFILE_KEY)
+      showToast('success', 'Business profile saved')
+      setBusiness(data)
+    } catch {
+      showToast('error', 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -78,30 +103,19 @@ export default function SetupPage(): React.ReactElement {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Page header */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-border flex-shrink-0">
         <h1 className="text-xl font-bold text-text-primary">Business Setup</h1>
-        <Button onClick={handleSave} loading={saving} size="sm">
-          Save Business Profile
-        </Button>
+        <Button onClick={handleSave} loading={saving} size="sm">Save Business Profile</Button>
       </div>
 
-      {/* Two-column grid — fills remaining height */}
       <div className="flex-1 overflow-hidden p-4">
         <div className="grid grid-cols-2 gap-4 h-full max-w-6xl mx-auto">
 
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-4 overflow-y-auto pr-1">
-
-            {/* Company Information */}
             <Card title="Company Information">
               <div className="space-y-3">
-                <Input
-                  ref={firstRef}
-                  label="Business Name *"
-                  value={form.business_name}
-                  onChange={handleChange('business_name')}
-                />
+                <Input ref={firstRef} label="Business Name *" value={form.business_name} onChange={handleChange('business_name')} />
                 <div className="grid grid-cols-2 gap-3">
                   <Input label="Phone" value={form.phone} onChange={handleChange('phone')} />
                   <Input label="Email" type="email" value={form.email} onChange={handleChange('email')} />
@@ -109,7 +123,6 @@ export default function SetupPage(): React.ReactElement {
               </div>
             </Card>
 
-            {/* GST & Tax Info */}
             <Card title="GST & Tax Info">
               <div className="grid grid-cols-2 gap-3">
                 <Input label="GSTIN" value={form.gstin} onChange={handleChange('gstin')} />
@@ -117,7 +130,6 @@ export default function SetupPage(): React.ReactElement {
               </div>
             </Card>
 
-            {/* Invoice Settings */}
             <Card title="Invoice Settings">
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Invoice Prefix" value={form.invoice_prefix} onChange={handleChange('invoice_prefix')} />
@@ -125,7 +137,6 @@ export default function SetupPage(): React.ReactElement {
               </div>
             </Card>
 
-            {/* Company Logo */}
             <Card title="Company Logo">
               <div className="flex items-center gap-4">
                 {logoPreview ? (
@@ -135,16 +146,11 @@ export default function SetupPage(): React.ReactElement {
                     No logo
                   </div>
                 )}
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-                <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()}>
-                  Upload Logo
+                <Button variant="secondary" size="sm" onClick={handlePickLogo} loading={uploadingLogo}>
+                  {uploadingLogo ? 'Uploading…' : 'Upload Logo'}
                 </Button>
-                {form.logo_path && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setForm((f) => ({ ...f, logo_path: '' })); setLogoPreview('') }}
-                  >
+                {form.logo_url && (
+                  <Button variant="ghost" size="sm" onClick={() => { setForm((f) => ({ ...f, logo_url: '' })); setLogoPreview('') }}>
                     Remove
                   </Button>
                 )}
@@ -154,8 +160,6 @@ export default function SetupPage(): React.ReactElement {
 
           {/* RIGHT COLUMN */}
           <div className="flex flex-col gap-4 overflow-y-auto pl-1">
-
-            {/* Address */}
             <Card title="Address">
               <div className="space-y-3">
                 <Input label="Address Line 1" value={form.address1} onChange={handleChange('address1')} />
@@ -168,7 +172,6 @@ export default function SetupPage(): React.ReactElement {
               </div>
             </Card>
 
-            {/* Bank Details */}
             <Card title="Bank Details">
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Bank Name" value={form.bank_name} onChange={handleChange('bank_name')} />

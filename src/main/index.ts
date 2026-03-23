@@ -1,12 +1,10 @@
 import { app, BrowserWindow, Menu, shell, nativeImage } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
-import { registerBusinessHandlers } from './ipc/business'
-import { registerCustomerHandlers } from './ipc/customers'
-import { registerInvoiceHandlers } from './ipc/invoices'
 import { registerPdfHandlers } from './ipc/pdf'
-import { registerBackupHandlers } from './ipc/backup'
-import { registerPaymentHandlers } from './ipc/payments'
+import { registerAuthHandlers } from './ipc/auth'
+import { registerLogoHandlers } from './ipc/logo'
+import { registerMigrateHandlers } from './ipc/migrate'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -44,7 +42,6 @@ function createWindow(): void {
 
   buildMenu()
   registerPdfHandlers(mainWindow)
-  registerBackupHandlers(mainWindow)
 }
 
 function buildMenu(): void {
@@ -56,15 +53,6 @@ function buildMenu(): void {
           label: 'New Invoice',
           accelerator: 'CmdOrCtrl+N',
           click: () => mainWindow?.webContents.send('menu:new-invoice')
-        },
-        { type: 'separator' },
-        {
-          label: 'Backup Data',
-          click: () => mainWindow?.webContents.send('menu:backup')
-        },
-        {
-          label: 'Restore Data',
-          click: () => mainWindow?.webContents.send('menu:restore')
         },
         { type: 'separator' },
         { role: 'quit' }
@@ -107,10 +95,9 @@ function buildMenu(): void {
 }
 
 app.whenReady().then(() => {
-  registerBusinessHandlers()
-  registerCustomerHandlers()
-  registerInvoiceHandlers()
-  registerPaymentHandlers()
+  registerAuthHandlers()
+  registerLogoHandlers()
+  registerMigrateHandlers()
   createWindow()
 })
 

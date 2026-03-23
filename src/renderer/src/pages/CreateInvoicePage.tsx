@@ -8,6 +8,7 @@ import { formatCurrencyINR, formatCurrencyWithSymbol } from '../utils/formatCurr
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
+import apiClient from '../lib/apiClient'
 
 type FormItem = InvoiceItem & { _key: string }
 
@@ -86,16 +87,14 @@ export default function CreateInvoicePage(): React.ReactElement {
   useEffect(() => { firstRef.current?.focus() }, [])
 
   useEffect(() => {
-    window.api.listCustomers().then((res) => {
-      if (res.success && res.data) {
-        setCustomers(res.data)
-        // Auto-select if navigated from Customers page
-        if (preselectedCustomerId && !editId) {
-          const c = res.data.find((x) => String(x.id) === preselectedCustomerId)
-          if (c) applyCustomer(c)
-        }
+    apiClient.get<Customer[]>('/invoice/customers').then(({ data }) => {
+      setCustomers(data)
+      // Auto-select if navigated from Customers page
+      if (preselectedCustomerId && !editId) {
+        const c = data.find((x) => x.id === preselectedCustomerId)
+        if (c) applyCustomer(c)
       }
-    })
+    }).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
@@ -111,9 +110,7 @@ export default function CreateInvoicePage(): React.ReactElement {
 
   useEffect(() => {
     if (editId) {
-      window.api.getInvoice(Number(editId)).then((res) => {
-        if (!res.success || !res.data) return
-        const inv: InvoiceWithItems = res.data
+      apiClient.get<InvoiceWithItems>(`/invoice/invoices/${editId}`).then(({ data: inv }) => {
         setIsLocked(inv.status === 'FINAL')
         setInvoiceNumber(inv.invoice_number)
         setInvoiceDate(inv.invoice_date)
@@ -137,13 +134,13 @@ export default function CreateInvoicePage(): React.ReactElement {
         setShipGstin(inv.ship_to_gstin)
         setShipState(inv.ship_to_state)
         setShipSame(!inv.ship_to_name || inv.ship_to_name === inv.buyer_name)
-        if (inv.customer_id) setSelectedCustomerId(String(inv.customer_id))
+        if (inv.customer_id) setSelectedCustomerId(inv.customer_id)
         setItems(inv.items.map((i) => ({ ...i, _key: Math.random().toString(36).slice(2) })))
-      })
+      }).catch(() => {})
     } else {
-      window.api.getNextInvoiceNumber().then((res) => {
-        if (res.success && res.data) setInvoiceNumber(res.data)
-      })
+      apiClient.get<{ next_number: string }>('/invoice/invoices/next-number').then(({ data }) => {
+        setInvoiceNumber(data.next_number)
+      }).catch(() => {})
     }
   }, [editId])
 
@@ -201,7 +198,7 @@ export default function CreateInvoicePage(): React.ReactElement {
     ship_to_address: shipSame ? buyerAddress : shipAddress,
     ship_to_gstin: shipSame ? buyerGstin : shipGstin,
     ship_to_state: shipSame ? buyerState : shipState,
-    customer_id: selectedCustomerId ? Number(selectedCustomerId) : null,
+    customer_id: selectedCustomerId || null,
     buyer_name: buyerName,
     buyer_address: buyerAddress,
     buyer_gstin: buyerGstin,
@@ -219,37 +216,26 @@ export default function CreateInvoicePage(): React.ReactElement {
     delivery_terms: deliveryTerms,
     ...totals,
     status,
-    cancelled: 0
+    cancelled: false
   })
 
   const handleSave = async (): Promise<void> => {
     if (!buyerName.trim()) { showToast('error', 'Buyer name is required'); return }
     setSaving(true)
     try {
+      const invoiceData = buildInvoiceData('DRAFT')
+      const payload = { ...invoiceData, items }
       if (editId) {
-        const res = await window.api.updateInvoice(
-          Number(editId),
-          buildInvoiceData('DRAFT') as Record<string, unknown>,
-          items as unknown as Record<string, unknown>[]
-        )
-        if (res.success) {
-          showToast('success', 'Invoice updated')
-          navigate(`/invoices/${editId}/preview`)
-        } else {
-          showToast('error', res.message || 'Update failed')
-        }
+        await apiClient.patch(`/invoice/invoices/${editId}`, payload)
+        showToast('success', 'Invoice updated')
+        navigate(`/invoices/${editId}/preview`)
       } else {
-        const res = await window.api.createInvoice(
-          buildInvoiceData('DRAFT') as Record<string, unknown>,
-          items as unknown as Record<string, unknown>[]
-        )
-        if (res.success) {
-          showToast('success', 'Invoice saved as draft')
-          navigate(`/invoices/${res.data}/preview`)
-        } else {
-          showToast('error', res.message || 'Save failed')
-        }
+        const { data } = await apiClient.post<{ id: string }>('/invoice/invoices', payload)
+        showToast('success', 'Invoice saved as draft')
+        navigate(`/invoices/${data.id}/preview`)
       }
+    } catch {
+      showToast('error', editId ? 'Update failed' : 'Save failed')
     } finally {
       setSaving(false)
     }

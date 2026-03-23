@@ -2,9 +2,10 @@ name: Build Distributables
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:   # allow manual trigger from GitHub UI
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 jobs:
   build:

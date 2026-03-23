@@ -3,3 +3,6 @@ dist/
 out/
 *.pdf
 *.db
+
+.env.development
+.env.local

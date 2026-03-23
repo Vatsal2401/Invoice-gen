@@ -1,11 +1,6 @@
-export interface IpcResult<T = undefined> {
-  success: boolean
-  data?: T
-  message?: string
-}
-
 export interface BusinessProfile {
-  id: number
+  id: string
+  user_id?: string
   business_name: string
   address1: string
   address2: string
@@ -24,11 +19,12 @@ export interface BusinessProfile {
   signatory_name: string
   invoice_prefix: string
   last_invoice_number: number
-  logo_path: string
+  /** S3 URL (cloud) or base64 data URL (local preview) */
+  logo_url?: string
 }
 
 export interface Customer {
-  id: number
+  id: string
   name: string
   address: string
   city: string
@@ -44,8 +40,8 @@ export interface Customer {
 export type CustomerInput = Omit<Customer, 'id' | 'created_at'>
 
 export interface InvoiceItem {
-  id?: number
-  invoice_id?: number
+  id?: string
+  invoice_id?: string
   sl_no: number
   description: string
   hsn_sac: string
@@ -61,14 +57,14 @@ export interface InvoiceItem {
 }
 
 export interface Invoice {
-  id?: number
+  id?: string
   invoice_number: string
   invoice_date: string
   ship_to_name: string
   ship_to_address: string
   ship_to_gstin: string
   ship_to_state: string
-  customer_id?: number
+  customer_id?: string
   buyer_name: string
   buyer_address: string
   buyer_gstin: string
@@ -90,18 +86,18 @@ export interface Invoice {
   sgst_total: number
   grand_total: number
   status: 'DRAFT' | 'FINAL'
-  cancelled: number
+  cancelled: boolean
   created_at?: string
 }
 
 export interface InvoiceSummary {
-  id: number
+  id: string
   invoice_number: string
   invoice_date: string
   buyer_name: string
   grand_total: number
   status: 'DRAFT' | 'FINAL'
-  cancelled: number
+  cancelled: boolean
   created_at: string
 }
 
@@ -110,8 +106,8 @@ export interface InvoiceWithItems extends Invoice {
 }
 
 export interface Payment {
-  id: number
-  customer_id: number
+  id: string
+  customer_id: string
   payment_date: string
   amount: number
   mode: string
@@ -131,7 +127,7 @@ export interface LedgerEntry {
   debit: number
   credit: number
   ref_type: 'invoice' | 'payment'
-  ref_id: number
+  ref_id: string
 }
 
 export interface HSNSummaryRow {

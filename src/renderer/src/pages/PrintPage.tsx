@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { InvoiceWithItems, BusinessProfile } from '../types'
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate'
+import apiClient from '../lib/apiClient'
 
 export default function PrintPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>()
@@ -12,24 +13,18 @@ export default function PrintPage(): React.ReactElement {
   useEffect(() => {
     if (!id) return
     Promise.all([
-      window.api.getInvoice(Number(id)),
-      window.api.getBusinessProfile()
-    ]).then(async ([invRes, bizRes]) => {
-      if (invRes.success && invRes.data) setInvoice(invRes.data)
-      if (bizRes.success && bizRes.data) {
-        setBusiness(bizRes.data)
-        if (bizRes.data.logo_path) {
-          const logoRes = await window.api.readLogo(bizRes.data.logo_path)
-          if (logoRes.success && logoRes.data) setLogoDataUrl(logoRes.data as string)
-        }
-      }
+      apiClient.get<InvoiceWithItems>(`/invoice/invoices/${id}`),
+      apiClient.get<BusinessProfile>('/invoice/profile')
+    ]).then(([invRes, bizRes]) => {
+      setInvoice(invRes.data)
+      setBusiness(bizRes.data)
+      if (bizRes.data.logo_url) setLogoDataUrl(bizRes.data.logo_url)
     })
   }, [id])
 
   // Send height to main process once template is fully painted
   useEffect(() => {
     if (!invoice || !business) return
-    // rAF ensures DOM is painted, then 200ms for any font/image layout
     const raf = requestAnimationFrame(() => {
       setTimeout(() => {
         const el = document.getElementById('invoice-template')

@@ -1,7 +1,9 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
-import { Settings, Users, FilePlus, History } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { Settings, Users, FilePlus, History, LogOut } from 'lucide-react'
 import appIcon from '../../assets/app-icon-64.png'
+import { useAuthStore } from '../../store/useAuthStore'
+import { useQueryCache } from '../../store/useQueryCache'
 
 const navItems = [
   { to: '/setup', label: 'Setup', icon: Settings },
@@ -11,6 +13,17 @@ const navItems = [
 ]
 
 export default function Sidebar(): React.ReactElement {
+  const navigate = useNavigate()
+  const { clearAuth, email } = useAuthStore()
+  const { invalidate } = useQueryCache()
+
+  const handleLogout = async (): Promise<void> => {
+    await window.api.clearTokens()
+    invalidate('/invoice/invoices', '/invoice/customers', '/invoice/profile')
+    clearAuth()
+    navigate('/login')
+  }
+
   return (
     <aside
       id="sidebar"
@@ -45,8 +58,19 @@ export default function Sidebar(): React.ReactElement {
         ))}
       </nav>
 
-      {/* Version */}
-      <div className="px-4 py-3 text-xs opacity-40">v1.0.0</div>
+      {/* User + Logout */}
+      <div className="border-t border-white/10 px-4 py-3">
+        {email && (
+          <div className="text-xs opacity-50 truncate mb-2">{email}</div>
+        )}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors w-full"
+        >
+          <LogOut size={15} />
+          Logout
+        </button>
+      </div>
     </aside>
   )
 }

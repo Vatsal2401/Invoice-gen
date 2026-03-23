@@ -79,18 +79,18 @@ async function printHiddenWindow(
 }
 
 export function registerPdfHandlers(mainWindow: BrowserWindow): void {
-  ipcMain.handle('pdf:export', async (_event, invoiceId: number) => {
+  ipcMain.handle('pdf:export', async (_event, invoiceId: string) => {
     const today = new Date().toISOString().slice(0, 10)
     return printHiddenWindow(
       mainWindow,
       `/print/${invoiceId}`,
-      `invoice-${invoiceId}-${today}.pdf`
+      `invoice-${invoiceId.slice(0, 8)}-${today}.pdf`
     )
   })
 
   ipcMain.handle(
     'pdf:exportLedger',
-    async (_event, customerId: number, customerName: string, fromDate: string, toDate: string) => {
+    async (_event, customerId: string, customerName: string, fromDate: string, toDate: string) => {
       const safeName = customerName.replace(/[^a-z0-9]/gi, '-').toLowerCase()
       const fileName = `ledger-${safeName}-${fromDate}-to-${toDate}.pdf`
       const hash = `/ledger/${customerId}/print?from=${fromDate}&to=${toDate}`

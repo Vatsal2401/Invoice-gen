@@ -84,7 +84,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       }}
     >
       {/* CANCELLED BANNER */}
-      {invoice.cancelled === 1 && (
+      {invoice.cancelled && (
         <div style={{
           background: '#DC2626', color: '#fff', textAlign: 'center',
           fontWeight: 'bold', fontSize: '14px', padding: '6px',

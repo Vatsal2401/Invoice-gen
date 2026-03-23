@@ -10,9 +10,7 @@ export default function AppLayout(): React.ReactElement {
   // Handle menu events from main process
   useEffect(() => {
     const unsubs = [
-      window.api.onMenuNewInvoice(() => navigate('/invoices/new')),
-      window.api.onMenuBackup(() => window.api.backupDatabase()),
-      window.api.onMenuRestore(() => window.api.restoreDatabase())
+      window.api.onMenuNewInvoice(() => navigate('/invoices/new'))
     ]
     return () => unsubs.forEach((fn) => fn())
   }, [navigate])
