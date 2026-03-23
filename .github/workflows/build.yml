@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ── Modern build: Windows 10+, macOS, Linux (Electron 28) ──────────────────
   build:
     strategy:
       fail-fast: false
@@ -51,4 +52,39 @@ jobs:
         with:
           name: GST-Invoice-Generator-${{ matrix.platform }}
           path: ${{ matrix.artifact }}
+          retention-days: 30
+
+  # ── Legacy build: Windows 7 / 8 (Electron 22) ─────────────────────────────
+  build-legacy-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Downgrade to Electron 22 (last version supporting Win 7/8)
+        run: npm install electron@22 --save-dev --legacy-peer-deps
+
+      - name: Build (Vite + TypeScript)
+        run: npm run build
+
+      - name: Package with electron-builder (legacy config)
+        run: npx electron-builder --win --config electron-builder-legacy.yml --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GST-Invoice-Generator-win-legacy-win7-8
+          path: dist-legacy/*.exe
           retention-days: 30

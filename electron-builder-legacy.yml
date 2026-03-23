@@ -1,0 +1,17 @@
+appId: com.siddhnath.invoice
+productName: GST Invoice Generator
+directories:
+  buildResources: build
+  output: dist-legacy
+files:
+  - out/**/*
+  - node_modules/**/*
+win:
+  target:
+    - target: nsis
+      arch: [x64, ia32]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
