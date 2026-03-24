@@ -47,7 +47,7 @@ export default function SetupPage(): React.ReactElement {
   // Populate form when profile loads (cached or fresh)
   useEffect(() => {
     if (!profile) return
-    const { id: _id, user_id: _uid, last_invoice_number: _lno, ...rest } = profile
+    const { id: _id, user_id: _uid, last_invoice_number: _lno, created_at: _ca, updated_at: _ua, ...rest } = profile as typeof profile & { created_at?: string; updated_at?: string }
     setForm({ ...EMPTY, ...rest })
     if (profile.logo_url) setLogoPreview(profile.logo_url)
     setBusiness(profile)

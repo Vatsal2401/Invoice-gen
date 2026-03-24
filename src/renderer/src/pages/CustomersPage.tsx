@@ -65,7 +65,7 @@ export default function CustomersPage(): React.ReactElement {
 
   const openEdit = (c: Customer): void => {
     setEditCustomer(c)
-    const { id: _id, created_at: _ca, ...rest } = c
+    const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = c as Customer & { updated_at?: string }
     setForm(rest)
     setModalOpen(true)
     setTimeout(() => firstRef.current?.focus(), 50)
