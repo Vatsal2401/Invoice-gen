@@ -137,18 +137,18 @@ export default function CreateInvoicePage(): React.ReactElement {
         if (inv.customer_id) setSelectedCustomerId(inv.customer_id)
         setItems(inv.items.map((i) => ({
           _key: Math.random().toString(36).slice(2),
-          sl_no: i.sl_no,
+          sl_no: Number(i.sl_no),
           description: i.description ?? '',
           hsn_sac: i.hsn_sac ?? '',
-          quantity: i.quantity,
+          quantity: Number(i.quantity),
           unit: i.unit ?? '',
-          rate: i.rate,
+          rate: Number(i.rate),
           per: i.per ?? '',
-          amount: i.amount,
-          cgst_rate: i.cgst_rate,
-          sgst_rate: i.sgst_rate,
-          cgst_amount: i.cgst_amount,
-          sgst_amount: i.sgst_amount,
+          amount: Number(i.amount),
+          cgst_rate: Number(i.cgst_rate),
+          sgst_rate: Number(i.sgst_rate),
+          cgst_amount: Number(i.cgst_amount),
+          sgst_amount: Number(i.sgst_amount),
         })))
       }).catch(() => {})
     } else {
@@ -294,8 +294,8 @@ export default function CreateInvoicePage(): React.ReactElement {
                     ref={firstRef}
                     className={inputCls}
                     value={invoiceNumber}
-                    onChange={(e) => !disabled && !editId && setInvoiceNumber(e.target.value)}
-                    disabled={disabled || !!editId}
+                    onChange={(e) => !disabled && setInvoiceNumber(e.target.value)}
+                    disabled={disabled}
                     placeholder="e.g. INV-001"
                   />
                 </FieldRow>
