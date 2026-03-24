@@ -7,7 +7,7 @@ import apiClient from '../lib/apiClient'
 import { useQuery } from '../lib/useQuery'
 import { useQueryCache } from '../store/useQueryCache'
 
-type ProfileForm = Omit<BusinessProfile, 'id' | 'user_id' | 'last_invoice_number'>
+type ProfileForm = Omit<BusinessProfile, 'id' | 'user_id' | 'last_invoice_number' | 'created_at' | 'updated_at'>
 
 const EMPTY: ProfileForm = {
   business_name: '',
