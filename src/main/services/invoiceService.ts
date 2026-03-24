@@ -72,7 +72,7 @@ export function getNextInvoiceNumber(): string {
     .prepare('SELECT invoice_prefix, last_invoice_number FROM business_profile WHERE id = 1')
     .get() as { invoice_prefix: string; last_invoice_number: number }
   const next = (profile.last_invoice_number || 0) + 1
-  return `${profile.invoice_prefix}-${String(next).padStart(3, '0')}`
+  return `${profile.invoice_prefix}-${String(next).padStart(4, '0')}`
 }
 
 export function createInvoice(invoiceData: Omit<Invoice, 'id' | 'created_at'>, items: InvoiceItem[]): number {

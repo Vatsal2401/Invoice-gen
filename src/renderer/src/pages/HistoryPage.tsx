@@ -46,13 +46,13 @@ export default function HistoryPage(): React.ReactElement {
   const handleCancel = async (): Promise<void> => {
     if (!cancelTarget) return
     try {
-      await apiClient.patch(`/invoice/invoices/${cancelTarget.id}/cancel`)
-      showToast('success', 'Invoice cancelled')
+      await apiClient.delete(`/invoice/invoices/${cancelTarget.id}`)
+      showToast('success', 'Invoice deleted')
       setCancelTarget(null)
       invalidate(INVOICES_KEY)
       refetch()
     } catch {
-      showToast('error', 'Cancel failed')
+      showToast('error', 'Delete failed')
     }
   }
 
@@ -108,9 +108,9 @@ export default function HistoryPage(): React.ReactElement {
                   <div className="flex items-center gap-1.5">
                     <Button variant="ghost" size="sm" onClick={() => navigate(`/invoices/${inv.id}/preview`)}><Eye size={13} /> View</Button>
                     <Button variant="ghost" size="sm" loading={exportLoading === inv.id} onClick={() => handleExport(inv)}><FileDown size={13} /> PDF</Button>
-                    {!inv.cancelled && (
+                    {!inv.cancelled && inv.status !== 'FINAL' && (
                       <Button variant="ghost" size="sm" className="text-danger hover:bg-red-50" onClick={() => setCancelTarget(inv)}>
-                        <XCircle size={13} /> Cancel
+                        <XCircle size={13} /> Delete
                       </Button>
                     )}
                   </div>
@@ -121,9 +121,9 @@ export default function HistoryPage(): React.ReactElement {
         </table>
       </div>
 
-      <Modal open={!!cancelTarget} title="Cancel Invoice" onClose={() => setCancelTarget(null)}
-        footer={<><Button variant="secondary" onClick={() => setCancelTarget(null)}>No, Keep It</Button><Button variant="danger" onClick={handleCancel}>Yes, Cancel Invoice</Button></>}>
-        <p className="text-sm">Are you sure you want to cancel invoice <strong>{cancelTarget?.invoice_number}</strong>? This marks the invoice as cancelled but does not delete it.</p>
+      <Modal open={!!cancelTarget} title="Delete Invoice" onClose={() => setCancelTarget(null)}
+        footer={<><Button variant="secondary" onClick={() => setCancelTarget(null)}>No, Keep It</Button><Button variant="danger" onClick={handleCancel}>Yes, Delete</Button></>}>
+        <p className="text-sm">Are you sure you want to permanently delete invoice <strong>{cancelTarget?.invoice_number}</strong>? This cannot be undone.</p>
       </Modal>
     </div>
   )

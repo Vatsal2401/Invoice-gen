@@ -21,14 +21,14 @@ export default function PreviewPage(): React.ReactElement {
 
   useEffect(() => {
     if (!id) return
-    apiClient.get<InvoiceWithItems>(`/invoice/invoices/${id}`).then(({ data }) => {
-      setInvoice(data)
-    }).catch(() => showToast('error', 'Invoice not found'))
-
-    apiClient.get<BusinessProfile>('/invoice/profile').then(({ data }) => {
-      setBusiness(data)
-      if (data.logo_url) setLogoDataUrl(data.logo_url)
-    })
+    Promise.all([
+      apiClient.get<InvoiceWithItems>(`/invoice/invoices/${id}`),
+      apiClient.get<BusinessProfile>('/invoice/profile'),
+    ]).then(([invRes, profRes]) => {
+      setInvoice(invRes.data)
+      setBusiness(profRes.data)
+      if (profRes.data.logo_url) setLogoDataUrl(profRes.data.logo_url)
+    }).catch(() => showToast('error', 'Failed to load invoice'))
   }, [id, showToast])
 
   const handlePrint = useCallback((): void => window.print(), [])

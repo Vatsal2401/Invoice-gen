@@ -206,6 +206,7 @@ export default function CreateInvoicePage(): React.ReactElement {
   const totals = calcInvoiceTotals(items)
 
   const buildInvoiceData = () => ({
+    invoice_number: invoiceNumber || undefined,
     invoice_date: invoiceDate,
     ship_to_name: shipSame ? buyerName : shipName,
     ship_to_address: shipSame ? buyerAddress : shipAddress,
@@ -293,8 +294,8 @@ export default function CreateInvoicePage(): React.ReactElement {
                     ref={firstRef}
                     className={inputCls}
                     value={invoiceNumber}
-                    onChange={(e) => !disabled && setInvoiceNumber(e.target.value)}
-                    disabled={disabled}
+                    onChange={(e) => !disabled && !editId && setInvoiceNumber(e.target.value)}
+                    disabled={disabled || !!editId}
                     placeholder="e.g. INV-001"
                   />
                 </FieldRow>
