@@ -191,8 +191,7 @@ export default function CreateInvoicePage(): React.ReactElement {
 
   const totals = calcInvoiceTotals(items)
 
-  const buildInvoiceData = (status: 'DRAFT' | 'FINAL') => ({
-    invoice_number: invoiceNumber,
+  const buildInvoiceData = () => ({
     invoice_date: invoiceDate,
     ship_to_name: shipSame ? buyerName : shipName,
     ship_to_address: shipSame ? buyerAddress : shipAddress,
@@ -215,16 +214,16 @@ export default function CreateInvoicePage(): React.ReactElement {
     payment_terms: paymentTerms,
     delivery_terms: deliveryTerms,
     ...totals,
-    status,
-    cancelled: false
   })
 
   const handleSave = async (): Promise<void> => {
     if (!buyerName.trim()) { showToast('error', 'Buyer name is required'); return }
     setSaving(true)
     try {
-      const invoiceData = buildInvoiceData('DRAFT')
-      const payload = { ...invoiceData, items }
+      const invoiceData = buildInvoiceData()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const cleanItems = items.map(({ _key, ...rest }) => rest)
+      const payload = { ...invoiceData, items: cleanItems }
       if (editId) {
         await apiClient.patch(`/invoice/invoices/${editId}`, payload)
         showToast('success', 'Invoice updated')

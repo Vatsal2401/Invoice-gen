@@ -90,7 +90,9 @@ export default function SetupPage(): React.ReactElement {
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     try {
-      const { data } = await apiClient.put<BusinessProfile>('/invoice/profile', form)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { logo_url: _logo, ...profilePayload } = form
+      const { data } = await apiClient.put<BusinessProfile>('/invoice/profile', profilePayload)
       invalidate(PROFILE_KEY)
       showToast('success', 'Business profile saved')
       setBusiness(data)
