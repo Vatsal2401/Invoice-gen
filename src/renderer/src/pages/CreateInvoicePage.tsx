@@ -303,7 +303,7 @@ export default function CreateInvoicePage(): React.ReactElement {
                   <input type="date" className={inputCls} value={invoiceDate}
                     onChange={(e) => !disabled && setInvoiceDate(e.target.value)} disabled={disabled} />
                 </FieldRow>
-                <FieldRow label="Delivery Note">
+                <FieldRow label="PO No.">
                   <input className={inputCls} value={deliveryNote}
                     onChange={(e) => !disabled && setDeliveryNote(e.target.value)} disabled={disabled} />
                 </FieldRow>
@@ -311,7 +311,7 @@ export default function CreateInvoicePage(): React.ReactElement {
                   <input className={inputCls} value={paymentTerms}
                     onChange={(e) => !disabled && setPaymentTerms(e.target.value)} disabled={disabled} />
                 </FieldRow>
-                <FieldRow label="Buyer Order No.">
+                <FieldRow label="Vehicle Number">
                   <input className={inputCls} value={buyerOrderNumber}
                     onChange={(e) => !disabled && setBuyerOrderNumber(e.target.value)} disabled={disabled} />
                 </FieldRow>

@@ -137,8 +137,8 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   <MetaRow l="Invoice No." v={invoice.invoice_number} l2="Dated" v2={invoice.invoice_date} />
-                  <MetaRow l="Delivery Note" v={invoice.delivery_note} l2="Payment Terms" v2={invoice.payment_terms} />
-                  <MetaRow l="Buyer's Order No." v={invoice.buyer_order_number} l2="Dated" v2={invoice.buyer_order_date} />
+                  <MetaRow l="PO No." v={invoice.delivery_note} l2="Payment Terms" v2={invoice.payment_terms} />
+                  <MetaRow l="Vehicle No." v={invoice.buyer_order_number} l2="Dated" v2={invoice.buyer_order_date} />
                   <MetaRow l="Dispatch Doc No." v={invoice.dispatch_doc_number} l2="Doc Date" v2={invoice.dispatch_doc_date} />
                   <MetaRow l="Dispatched through" v={invoice.dispatched_through} l2="Destination" v2={invoice.destination} />
                   <tr>
