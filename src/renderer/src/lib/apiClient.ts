@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_API_URL || 'https://invoice-backend.autoreels.in',
   timeout: 30000
 })
 
@@ -26,7 +26,7 @@ apiClient.interceptors.response.use(
         if (!tokens?.refresh_token) throw new Error('No refresh token')
 
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/refresh`,
+          `${import.meta.env.VITE_API_URL || 'https://invoice-backend.autoreels.in'}/auth/refresh`,
           { refresh_token: tokens.refresh_token }
         )
         await window.api.setTokens({
