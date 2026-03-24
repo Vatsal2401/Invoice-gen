@@ -135,7 +135,21 @@ export default function CreateInvoicePage(): React.ReactElement {
         setShipState(inv.ship_to_state)
         setShipSame(!inv.ship_to_name || inv.ship_to_name === inv.buyer_name)
         if (inv.customer_id) setSelectedCustomerId(inv.customer_id)
-        setItems(inv.items.map((i) => ({ ...i, _key: Math.random().toString(36).slice(2) })))
+        setItems(inv.items.map((i) => ({
+          _key: Math.random().toString(36).slice(2),
+          sl_no: i.sl_no,
+          description: i.description ?? '',
+          hsn_sac: i.hsn_sac ?? '',
+          quantity: i.quantity,
+          unit: i.unit ?? '',
+          rate: i.rate,
+          per: i.per ?? '',
+          amount: i.amount,
+          cgst_rate: i.cgst_rate,
+          sgst_rate: i.sgst_rate,
+          cgst_amount: i.cgst_amount,
+          sgst_amount: i.sgst_amount,
+        })))
       }).catch(() => {})
     } else {
       apiClient.get<{ next_number: string }>('/invoice/invoices/next-number').then(({ data }) => {

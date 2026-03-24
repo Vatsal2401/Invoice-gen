@@ -1,6 +1,8 @@
 export interface BusinessProfile {
   id: string
   user_id?: string
+  created_at?: string
+  updated_at?: string
   business_name: string
   address1: string
   address2: string
@@ -35,13 +37,12 @@ export interface Customer {
   pan: string
   phone: string
   created_at: string
+  updated_at?: string
 }
 
-export type CustomerInput = Omit<Customer, 'id' | 'created_at'>
+export type CustomerInput = Omit<Customer, 'id' | 'created_at' | 'updated_at'>
 
 export interface InvoiceItem {
-  id?: string
-  invoice_id?: string
   sl_no: number
   description: string
   hsn_sac: string
