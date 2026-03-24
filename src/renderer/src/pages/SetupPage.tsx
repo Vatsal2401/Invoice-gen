@@ -64,24 +64,36 @@ export default function SetupPage(): React.ReactElement {
     setLogoPreview(result.dataUrl)
     setUploadingLogo(true)
     try {
-      // Convert data URL to Blob and upload
-      const arr = result.dataUrl.split(',')
       const mime = result.mimeType || 'image/png'
+      const filename = result.fileName || 'logo.png'
+
+      // Step 1: get presigned PUT URL from backend
+      const { data: presign } = await apiClient.post<{ upload_url: string; logo_url: string }>(
+        '/invoice/profile/logo/presign',
+        { filename, contentType: mime }
+      )
+
+      // Step 2: upload file directly to Supabase Storage (no auth header needed)
+      const arr = result.dataUrl.split(',')
       const bstr = atob(arr[1])
       const u8arr = new Uint8Array(bstr.length)
       for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i)
       const blob = new Blob([u8arr], { type: mime })
-      const formData = new FormData()
-      formData.append('file', blob, result.fileName || 'logo.png')
 
-      const { data } = await apiClient.post<{ logo_url: string }>('/invoice/profile/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      await fetch(presign.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': mime },
+        body: blob,
       })
-      setForm((f) => ({ ...f, logo_url: data.logo_url }))
+
+      // Step 3: confirm with backend to save URL to profile
+      await apiClient.post('/invoice/profile/logo/confirm', { logo_url: presign.logo_url })
+
+      setForm((f) => ({ ...f, logo_url: presign.logo_url }))
       invalidate(PROFILE_KEY)
       showToast('success', 'Logo uploaded')
     } catch {
-      showToast('error', 'Logo upload failed. Check S3 configuration.')
+      showToast('error', 'Logo upload failed.')
     } finally {
       setUploadingLogo(false)
     }
