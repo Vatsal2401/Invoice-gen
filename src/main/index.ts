@@ -84,12 +84,10 @@ function buildMenu(): void {
     }
   ]
 
-  if (is.dev) {
-    ;(template[2].submenu as Electron.MenuItemConstructorOptions[]).push(
-      { type: 'separator' },
-      { role: 'toggleDevTools' }
-    )
-  }
+  ;(template[2].submenu as Electron.MenuItemConstructorOptions[]).push(
+    { type: 'separator' },
+    { role: 'toggleDevTools' }
+  )
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
