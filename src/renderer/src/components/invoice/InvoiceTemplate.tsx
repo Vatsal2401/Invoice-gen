@@ -10,6 +10,12 @@ interface Props {
   logoDataUrl?: string
 }
 
+function fmtDate(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}-${m}-${y}`
+}
+
 // All borders 1px solid black for print clarity
 const S = {
   table: {
@@ -136,10 +142,10 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
             <td style={{ width: '50%', padding: 0, verticalAlign: 'top' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <MetaRow l="Invoice No." v={invoice.invoice_number} l2="Dated" v2={invoice.invoice_date} />
+                  <MetaRow l="Invoice No." v={invoice.invoice_number} l2="Dated" v2={fmtDate(invoice.invoice_date)} />
                   <MetaRow l="PO No." v={invoice.delivery_note} l2="Payment Terms" v2={invoice.payment_terms} />
-                  <MetaRow l="Vehicle No." v={invoice.buyer_order_number} l2="Dated" v2={invoice.buyer_order_date} />
-                  <MetaRow l="Dispatch Doc No." v={invoice.dispatch_doc_number} l2="Doc Date" v2={invoice.dispatch_doc_date} />
+                  <MetaRow l="Vehicle No." v={invoice.buyer_order_number} l2="Dated" v2={fmtDate(invoice.buyer_order_date)} />
+                  <MetaRow l="Dispatch Doc No." v={invoice.dispatch_doc_number} l2="Doc Date" v2={fmtDate(invoice.dispatch_doc_date)} />
                   <MetaRow l="Dispatched through" v={invoice.dispatched_through} l2="Destination" v2={invoice.destination} />
                   <tr>
                     <td colSpan={4} style={{ ...S.cell, borderTop: 'none' }}>

@@ -12,6 +12,12 @@ import { useQueryCache } from '../store/useQueryCache'
 
 const INVOICES_KEY = '/invoice/invoices'
 
+function fmtDate(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}-${m}-${y}`
+}
+
 export default function HistoryPage(): React.ReactElement {
   const navigate = useNavigate()
   const { showToast } = useStore()
@@ -96,7 +102,7 @@ export default function HistoryPage(): React.ReactElement {
                     )}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-text-secondary">{inv.invoice_date}</td>
+                <td className="px-3 py-2 text-text-secondary">{fmtDate(inv.invoice_date)}</td>
                 <td className="px-3 py-2">{inv.buyer_name}</td>
                 <td className="px-3 py-2 tabular-nums font-mono text-right">{formatCurrencyWithSymbol(inv.grand_total)}</td>
                 <td className="px-3 py-2">

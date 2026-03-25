@@ -14,8 +14,7 @@ interface Props {
 function fmt(iso: string): string {
   if (!iso) return ''
   const [y, m, d] = iso.split('-')
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  return `${parseInt(d)}-${months[parseInt(m)-1]}-${y}`
+  return `${d}-${m}-${y}`
 }
 
 const border = '1px solid #000'
