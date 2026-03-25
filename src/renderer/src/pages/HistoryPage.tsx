@@ -7,6 +7,7 @@ import { formatCurrencyWithSymbol } from '../utils/formatCurrency'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 import { useQuery } from '../lib/useQuery'
 import { useQueryCache } from '../store/useQueryCache'
 
@@ -57,8 +58,8 @@ export default function HistoryPage(): React.ReactElement {
       setCancelTarget(null)
       invalidate(INVOICES_KEY)
       refetch()
-    } catch {
-      showToast('error', 'Delete failed')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Delete failed'))
     }
   }
 

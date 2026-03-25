@@ -9,6 +9,7 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import LedgerTemplate from '../components/invoice/LedgerTemplate'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 
 const PAYMENT_MODES = ['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'NEFT', 'RTGS', 'Other']
 
@@ -98,7 +99,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
       allEntries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
       setEntries(allEntries)
     } catch (err) {
-      showToast('error', (err as Error).message || 'Failed to load ledger')
+      showToast('error', getApiError(err, 'Failed to load ledger'))
     }
   }, [id, fromDate, toDate, showToast])
 
@@ -126,8 +127,8 @@ export default function CustomerLedgerPage(): React.ReactElement {
       setPayModal(false)
       setPayForm({ payment_date: new Date().toISOString().slice(0, 10), amount: '', mode: 'Cash', reference: '', narration: '', entryType: 'credit' })
       loadLedger()
-    } catch {
-      showToast('error', 'Failed to record payment')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Failed to record payment'))
     } finally {
       setSaving(false)
     }
@@ -140,8 +141,8 @@ export default function CustomerLedgerPage(): React.ReactElement {
       showToast('success', 'Payment deleted')
       setDeleteConfirm(null)
       loadLedger()
-    } catch {
-      showToast('error', 'Delete failed')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Delete failed'))
     }
   }
 

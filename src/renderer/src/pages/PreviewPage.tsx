@@ -7,6 +7,7 @@ import InvoiceTemplate from '../components/invoice/InvoiceTemplate'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 
 export default function PreviewPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>()
@@ -28,7 +29,7 @@ export default function PreviewPage(): React.ReactElement {
       setInvoice(invRes.data)
       setBusiness(profRes.data)
       if (profRes.data.logo_url) setLogoDataUrl(profRes.data.logo_url)
-    }).catch(() => showToast('error', 'Failed to load invoice'))
+    }).catch((err) => showToast('error', getApiError(err, 'Failed to load invoice')))
   }, [id, showToast])
 
   const handlePrint = useCallback((): void => window.print(), [])
@@ -60,9 +61,9 @@ export default function PreviewPage(): React.ReactElement {
       setFinalizeModal(false)
       showToast('success', 'Invoice finalized')
       setInvoice((inv) => inv ? { ...inv, status: 'FINAL' } : inv)
-    } catch {
+    } catch (err) {
       setFinalizing(false)
-      showToast('error', 'Finalize failed')
+      showToast('error', getApiError(err, 'Finalize failed'))
     }
   }
 

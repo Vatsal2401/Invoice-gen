@@ -9,6 +9,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 
 type FormItem = InvoiceItem & { _key: string }
 
@@ -248,8 +249,8 @@ export default function CreateInvoicePage(): React.ReactElement {
         showToast('success', 'Invoice saved as draft')
         navigate(`/invoices/${data.id}/preview`)
       }
-    } catch {
-      showToast('error', editId ? 'Update failed' : 'Save failed')
+    } catch (err) {
+      showToast('error', getApiError(err, editId ? 'Update failed' : 'Save failed'))
     } finally {
       setSaving(false)
     }

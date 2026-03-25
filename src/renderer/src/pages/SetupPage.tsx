@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 import { useQuery } from '../lib/useQuery'
 import { useQueryCache } from '../store/useQueryCache'
 
@@ -86,8 +87,8 @@ export default function SetupPage(): React.ReactElement {
       setForm((f) => ({ ...f, logo_url: data.logo_url }))
       invalidate(PROFILE_KEY)
       showToast('success', 'Logo uploaded')
-    } catch {
-      showToast('error', 'Logo upload failed.')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Logo upload failed'))
     } finally {
       setUploadingLogo(false)
     }
@@ -102,8 +103,8 @@ export default function SetupPage(): React.ReactElement {
       invalidate(PROFILE_KEY)
       showToast('success', 'Business profile saved')
       setBusiness(data)
-    } catch {
-      showToast('error', 'Save failed')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Save failed'))
     } finally {
       setSaving(false)
     }

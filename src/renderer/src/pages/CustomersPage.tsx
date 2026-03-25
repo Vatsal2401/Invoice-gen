@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import apiClient from '../lib/apiClient'
+import { getApiError } from '../lib/apiError'
 import { useQuery } from '../lib/useQuery'
 import { useQueryCache } from '../store/useQueryCache'
 
@@ -89,8 +90,8 @@ export default function CustomersPage(): React.ReactElement {
       setModalOpen(false)
       invalidate(CUSTOMERS_KEY)
       refetch()
-    } catch {
-      showToast('error', 'Save failed')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Save failed'))
     } finally {
       setSaving(false)
     }
@@ -104,8 +105,8 @@ export default function CustomersPage(): React.ReactElement {
       setArchiveConfirm(null)
       invalidate(CUSTOMERS_KEY)
       refetch()
-    } catch {
-      showToast('error', 'Archive failed')
+    } catch (err) {
+      showToast('error', getApiError(err, 'Archive failed'))
     }
   }
 
