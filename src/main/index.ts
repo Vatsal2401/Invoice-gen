@@ -29,6 +29,10 @@ function createWindow(): void {
     mainWindow?.show()
   })
 
+  mainWindow.webContents.on('context-menu', (_e, params) => {
+    mainWindow?.webContents.inspectElement(params.x, params.y)
+  })
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
