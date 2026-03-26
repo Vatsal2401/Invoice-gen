@@ -25,6 +25,10 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+publish:
+  provider: github
+  owner: Vatsal2401
+  repo: Invoice-gen
 dmg:
   title: GST Invoice Generator
   contents:

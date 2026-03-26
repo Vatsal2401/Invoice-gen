@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, shell, nativeImage } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
 import { registerPdfHandlers } from './ipc/pdf'
 import { registerAuthHandlers } from './ipc/auth'
 import { registerLogoHandlers } from './ipc/logo'
@@ -101,6 +102,9 @@ app.whenReady().then(() => {
   registerLogoHandlers()
   registerMigrateHandlers()
   createWindow()
+  if (!is.dev) {
+    autoUpdater.checkForUpdatesAndNotify()
+  }
 })
 
 app.on('window-all-closed', () => {

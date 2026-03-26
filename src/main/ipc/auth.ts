@@ -1,14 +1,27 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import Store from 'electron-store'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { join } from 'path'
+import { randomBytes } from 'crypto'
 
 interface TokenStore {
   access_token: string
   refresh_token: string
 }
 
+function getMachineKey(): string {
+  const dir = app.getPath('userData')
+  const keyFile = join(dir, '.enc-key')
+  if (!existsSync(keyFile)) {
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(keyFile, randomBytes(32).toString('hex'), 'utf8')
+  }
+  return readFileSync(keyFile, 'utf8').trim()
+}
+
 const store = new Store<{ tokens: TokenStore | null }>({
   name: 'auth',
-  encryptionKey: 'invoice-app-secret-key-change-in-prod'
+  encryptionKey: getMachineKey()
 })
 
 export function registerAuthHandlers(): void {
