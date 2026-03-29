@@ -92,7 +92,7 @@ export default function AllInvoicesView({ customerId, buyerName }: Props): React
   const invalidateAndRefetch = (): void => {
     const { invalidate } = useQueryCache.getState()
     const keys = Object.keys(useQueryCache.getState().entries).filter(
-      (k) => k.startsWith('/invoice/invoices?') || k === '/invoice/invoices/stats' || k === '/invoice/invoices/customer-summary'
+      (k) => k.startsWith('/invoice/invoices?') || k === '/invoice/invoices/stats' || k === '/invoice/invoices/customer-summary' || k === '/invoice/invoices/dashboard'
     )
     invalidate(...keys)
     fetchPage(page, search, statusFilter)

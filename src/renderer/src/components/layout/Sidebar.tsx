@@ -1,11 +1,12 @@
 import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Settings, Users, FilePlus, History, LogOut } from 'lucide-react'
+import { LayoutDashboard, Settings, Users, FilePlus, History, LogOut } from 'lucide-react'
 import appIcon from '../../assets/app-icon-64.png'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useQueryCache } from '../../store/useQueryCache'
 
 const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/setup', label: 'Setup', icon: Settings },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/invoices/new', label: 'New Invoice', icon: FilePlus },

@@ -318,17 +318,46 @@ export default function CustomerLedgerPage(): React.ReactElement {
 
 function ItemsPopover({ items }: { items: string[] }): React.ReactElement {
   const [open, setOpen] = React.useState(false)
+  const [pos, setPos] = React.useState({ top: 0, left: 0, openUp: false })
+  const btnRef = React.useRef<HTMLButtonElement>(null)
+
+  const handleMouseEnter = (): void => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const openUp = spaceBelow < 160
+      setPos({
+        top: openUp ? rect.top - 8 : rect.bottom + 4,
+        left: rect.left,
+        openUp,
+      })
+    }
+    setOpen(true)
+  }
+
   return (
     <span className="relative inline-block">
       <button
-        onMouseEnter={() => setOpen(true)}
+        ref={btnRef}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setOpen(false)}
         className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium hover:bg-blue-200 transition-colors"
       >
         +{items.length - 1} more
       </button>
       {open && (
-        <div className="absolute left-0 top-6 z-50 bg-white border border-border rounded-lg shadow-lg p-2 min-w-[180px]">
+        <div
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            top: pos.openUp ? undefined : pos.top,
+            bottom: pos.openUp ? window.innerHeight - pos.top : undefined,
+            left: pos.left,
+            zIndex: 9999,
+          }}
+          className="bg-white border border-border rounded-lg shadow-xl p-2 min-w-[200px] max-w-[280px]"
+        >
           <p className="text-xs font-semibold text-text-secondary mb-1 px-1">All items</p>
           {items.map((item, i) => (
             <div key={i} className="text-xs text-text-primary px-1 py-0.5 hover:bg-gray-50 rounded">{item}</div>

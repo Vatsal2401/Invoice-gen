@@ -6,6 +6,7 @@ import CustomersPage from './pages/CustomersPage'
 import CreateInvoicePage from './pages/CreateInvoicePage'
 import PreviewPage from './pages/PreviewPage'
 import HistoryPage from './pages/HistoryPage'
+import DashboardPage from './pages/DashboardPage'
 import PrintPage from './pages/PrintPage'
 import PrintLedgerPage from './pages/PrintLedgerPage'
 import CustomerLedgerPage from './pages/CustomerLedgerPage'
@@ -65,12 +66,13 @@ function AppRoutes(): React.ReactElement {
       <Route path="/ledger/:id/print" element={<PrintLedgerPage />} />
 
       {/* Auth + migration (no AppLayout) */}
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/history" replace /> : <LoginPage />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/migrate" element={isAuthenticated ? <MigrationPage /> : <Navigate to="/login" replace />} />
 
       {/* Protected app routes */}
       <Route element={isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />}>
-        <Route index element={<Navigate to="/history" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/invoices/new" element={<CreateInvoicePage />} />

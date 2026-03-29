@@ -88,11 +88,12 @@ export default function CreateInvoicePage(): React.ReactElement {
   useEffect(() => { firstRef.current?.focus() }, [])
 
   useEffect(() => {
-    apiClient.get<Customer[]>('/invoice/customers').then(({ data }) => {
-      setCustomers(data)
+    apiClient.get<{ data: Customer[] }>('/invoice/customers?limit=500').then(({ data: res }) => {
+      const list = Array.isArray(res) ? res : (res.data ?? [])
+      setCustomers(list)
       // Auto-select if navigated from Customers page
       if (preselectedCustomerId && !editId) {
-        const c = data.find((x) => x.id === preselectedCustomerId)
+        const c = list.find((x) => x.id === preselectedCustomerId)
         if (c) applyCustomer(c)
       }
     }).catch(() => {})
