@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Archive, Search, FilePlus, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Customer, CustomerInput } from '../types'
@@ -6,9 +6,9 @@ import { useStore } from '../store/useStore'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
+import { TableSkeleton } from '../components/ui/Skeleton'
 import apiClient from '../lib/apiClient'
 import { getApiError } from '../lib/apiError'
-import { useQuery } from '../lib/useQuery'
 import { useQueryCache } from '../store/useQueryCache'
 
 const EMPTY_FORM: CustomerInput = {
@@ -24,15 +24,18 @@ const EMPTY_FORM: CustomerInput = {
 }
 
 const PAGE_SIZE = 17
-const CUSTOMERS_KEY = '/invoice/customers'
+
+interface PagedResult { data: Customer[]; total: number; page: number; limit: number }
 
 export default function CustomersPage(): React.ReactElement {
   const navigate = useNavigate()
   const { showToast } = useStore()
-  const { invalidate } = useQueryCache()
-  const { data: customers = [], refetch } = useQuery<Customer[]>(CUSTOMERS_KEY)
-  const [search, setSearch] = useState('')
+  const { get, set } = useQueryCache()
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState<CustomerInput>(EMPTY_FORM)
@@ -40,6 +43,7 @@ export default function CustomersPage(): React.ReactElement {
   const [archiveConfirm, setArchiveConfirm] = useState<Customer | null>(null)
   const firstRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -49,13 +53,37 @@ export default function CustomersPage(): React.ReactElement {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const filtered = customers.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.gstin || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.phone || '').includes(search)
-  )
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const fetchPage = useCallback(async (p: number, q: string) => {
+    const cacheKey = `/invoice/customers?page=${p}&limit=${PAGE_SIZE}&search=${q}`
+    const cached = get<PagedResult>(cacheKey)
+    if (cached) { setCustomers(cached.data); setTotal(cached.total); setLoading(false); return }
+    setLoading(true)
+    try {
+      const { data } = await apiClient.get<PagedResult>(`/invoice/customers?page=${p}&limit=${PAGE_SIZE}&search=${encodeURIComponent(q)}`)
+      set(cacheKey, data)
+      setCustomers(data.data)
+      setTotal(data.total)
+    } catch (err) {
+      showToast('error', getApiError(err, 'Failed to load customers'))
+    } finally {
+      setLoading(false)
+    }
+  }, [get, set, showToast])
+
+  useEffect(() => { fetchPage(page, search) }, [page])
+
+  // Debounce search — reset to page 1
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setPage(1)
+      fetchPage(1, search)
+    }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [search])
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const paginated = customers
 
   const openAdd = (): void => {
     setEditCustomer(null)
@@ -76,6 +104,14 @@ export default function CustomersPage(): React.ReactElement {
     setForm((f) => ({ ...f, [field]: e.target.value }))
   }
 
+  const invalidateAndRefetch = (): void => {
+    // Clear all customer page caches and refetch current page
+    const { invalidate } = useQueryCache.getState()
+    const keys = Object.keys(useQueryCache.getState().entries).filter((k) => k.startsWith('/invoice/customers?'))
+    invalidate(...keys)
+    fetchPage(page, search)
+  }
+
   const handleSave = async (): Promise<void> => {
     if (!form.name.trim()) { showToast('error', 'Customer name is required'); return }
     setSaving(true)
@@ -88,8 +124,7 @@ export default function CustomersPage(): React.ReactElement {
         showToast('success', 'Customer added')
       }
       setModalOpen(false)
-      invalidate(CUSTOMERS_KEY)
-      refetch()
+      invalidateAndRefetch()
     } catch (err) {
       showToast('error', getApiError(err, 'Save failed'))
     } finally {
@@ -103,8 +138,7 @@ export default function CustomersPage(): React.ReactElement {
       await apiClient.delete(`/invoice/customers/${archiveConfirm.id}`)
       showToast('success', 'Customer archived')
       setArchiveConfirm(null)
-      invalidate(CUSTOMERS_KEY)
-      refetch()
+      invalidateAndRefetch()
     } catch (err) {
       showToast('error', getApiError(err, 'Archive failed'))
     }
@@ -149,14 +183,15 @@ export default function CustomersPage(): React.ReactElement {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 && (
+              {loading && <TableSkeleton rows={PAGE_SIZE} cols={5} />}
+              {!loading && paginated.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-text-secondary py-10">
                     {search ? `No customers match "${search}"` : 'No customers yet. Click "Add Customer" to add one.'}
                   </td>
                 </tr>
               )}
-              {paginated.map((c) => (
+              {!loading && paginated.map((c) => (
                 <tr key={c.id} className="border-b border-border hover:bg-gray-50">
                   <td className="px-3 py-2 font-medium">{c.name}</td>
                   <td className="px-3 py-2 text-text-secondary font-mono text-xs">{c.gstin || '—'}</td>
@@ -189,9 +224,9 @@ export default function CustomersPage(): React.ReactElement {
 
       <div className="flex-shrink-0 border-t border-border bg-white px-6 py-2 flex items-center justify-between text-sm text-text-secondary">
         <span>
-          {filtered.length === 0
+          {loading ? 'Loading...' : total === 0
             ? 'No customers'
-            : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${filtered.length}`}
+            : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}`}
         </span>
         {totalPages > 1 && (
           <div className="flex items-center gap-1">

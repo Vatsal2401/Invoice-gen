@@ -3,6 +3,7 @@ import type { BusinessProfile } from '../types'
 import { useStore } from '../store/useStore'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import { FormSkeleton } from '../components/ui/Skeleton'
 import apiClient from '../lib/apiClient'
 import { getApiError } from '../lib/apiError'
 import { useQuery } from '../lib/useQuery'
@@ -36,7 +37,7 @@ const PROFILE_KEY = '/invoice/profile'
 export default function SetupPage(): React.ReactElement {
   const { showToast, setBusiness } = useStore()
   const { invalidate } = useQueryCache()
-  const { data: profile } = useQuery<BusinessProfile>(PROFILE_KEY)
+  const { data: profile, loading: profileLoading } = useQuery<BusinessProfile>(PROFILE_KEY, { ttl: 30 * 60 * 1000 })
   const [form, setForm] = useState<ProfileForm>(EMPTY)
   const [saving, setSaving] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string>('')
@@ -118,7 +119,13 @@ export default function SetupPage(): React.ReactElement {
       </div>
 
       <div className="flex-1 overflow-hidden p-4">
-        <div className="grid grid-cols-2 gap-4 h-full max-w-6xl mx-auto">
+        {profileLoading && (
+          <div className="grid grid-cols-2 gap-4 max-w-6xl mx-auto">
+            <FormSkeleton rows={6} />
+            <FormSkeleton rows={5} />
+          </div>
+        )}
+        {!profileLoading && <div className="grid grid-cols-2 gap-4 h-full max-w-6xl mx-auto">
 
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-4 overflow-y-auto pr-1">
@@ -159,7 +166,17 @@ export default function SetupPage(): React.ReactElement {
                   {uploadingLogo ? 'Uploading…' : 'Upload Logo'}
                 </Button>
                 {form.logo_url && (
-                  <Button variant="ghost" size="sm" onClick={() => { setForm((f) => ({ ...f, logo_url: '' })); setLogoPreview('') }}>
+                  <Button variant="ghost" size="sm" onClick={async () => {
+                    try {
+                      await apiClient.delete('/invoice/profile/logo')
+                      setForm((f) => ({ ...f, logo_url: '' }))
+                      setLogoPreview('')
+                      invalidate(PROFILE_KEY)
+                      showToast('success', 'Logo removed')
+                    } catch (err) {
+                      showToast('error', getApiError(err, 'Failed to remove logo'))
+                    }
+                  }}>
                     Remove
                   </Button>
                 )}
@@ -192,7 +209,7 @@ export default function SetupPage(): React.ReactElement {
             </Card>
           </div>
 
-        </div>
+        </div>}
       </div>
     </div>
   )

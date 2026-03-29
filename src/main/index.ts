@@ -96,11 +96,26 @@ function buildMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
+// Keep Railway service warm — ping every 4 minutes to prevent cold starts
+let keepAliveTimer: ReturnType<typeof setInterval> | null = null
+
+function startKeepAlive(): void {
+  const url = 'https://invoice-backend.autoreels.in/health'
+  keepAliveTimer = setInterval(() => {
+    fetch(url).catch(() => {/* ignore errors */})
+  }, 4 * 60 * 1000)
+}
+
 app.whenReady().then(() => {
   registerAuthHandlers()
   registerLogoHandlers()
   registerMigrateHandlers()
   createWindow()
+  startKeepAlive()
+})
+
+app.on('will-quit', () => {
+  if (keepAliveTimer) clearInterval(keepAliveTimer)
 })
 
 app.on('window-all-closed', () => {

@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore'
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
+import { PageLoadingSkeleton } from '../components/ui/Skeleton'
 import apiClient from '../lib/apiClient'
 import { getApiError } from '../lib/apiError'
 
@@ -68,7 +69,7 @@ export default function PreviewPage(): React.ReactElement {
   }
 
   if (!invoice || !business) {
-    return <div className="p-6 text-text-secondary">Loading...</div>
+    return <PageLoadingSkeleton />
   }
 
   const isDraft = invoice.status === 'DRAFT' && !invoice.cancelled

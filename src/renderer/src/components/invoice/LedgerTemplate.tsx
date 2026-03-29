@@ -87,7 +87,7 @@ export default function LedgerTemplate({ business, customer, entries, fromDate, 
         <thead>
           <tr>
             <th style={{ ...S.th, width: '14%' }}>Date</th>
-            <th style={{ ...S.th, width: '24%' }}>Particulars</th>
+            <th style={{ ...S.th, width: '24%' }}>Description of Goods</th>
             <th style={{ ...S.th, width: '18%' }}>Narration</th>
             <th style={{ ...S.th, width: '12%' }}>Vch Type</th>
             <th style={{ ...S.thR, width: '10%' }}>Vch No.</th>
@@ -107,10 +107,18 @@ export default function LedgerTemplate({ business, customer, entries, fromDate, 
             <tr key={i}>
               <td style={S.cell}>{fmt(e.date)}</td>
               <td style={{ ...S.cell, fontWeight: e.vch_type === 'Debit Note' ? 'bold' : 'normal' }}>
-                <span style={{ fontStyle: 'normal' }}>
-                  {e.vch_type === 'Receipt' ? <span>By <strong>{e.particulars}</strong></span>
-                    : <span>To <strong>{e.particulars}</strong></span>}
-                </span>
+                {e.vch_type === 'Receipt' ? (
+                  <span>By <strong>{e.particulars}</strong></span>
+                ) : (
+                  <span>
+                    {e.item_descriptions && e.item_descriptions.length > 0
+                      ? e.item_descriptions.map((desc, di) => (
+                          <span key={di} style={{ display: 'block' }}><strong>{desc}</strong></span>
+                        ))
+                      : <strong>{e.particulars}</strong>
+                    }
+                  </span>
+                )}
               </td>
               <td style={S.cell}>{e.narration}</td>
               <td style={{ ...S.cell, fontWeight: 'bold' }}>{e.vch_type}</td>

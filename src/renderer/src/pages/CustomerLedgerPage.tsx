@@ -8,6 +8,7 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import LedgerTemplate from '../components/invoice/LedgerTemplate'
+import { PageLoadingSkeleton, KPISkeleton, TableSkeleton } from '../components/ui/Skeleton'
 import apiClient from '../lib/apiClient'
 import { getApiError } from '../lib/apiError'
 
@@ -40,6 +41,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
   const [entries, setEntries] = useState<LedgerEntry[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
 
+  const [ledgerLoading, setLedgerLoading] = useState(true)
   const [payModal, setPayModal] = useState(false)
   const [payForm, setPayForm] = useState({ payment_date: new Date().toISOString().slice(0, 10), amount: '', mode: 'Cash', reference: '', narration: '', entryType: 'credit' })
   const [saving, setSaving] = useState(false)
@@ -63,7 +65,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
         apiClient.get(`/invoice/payments/ledger?customerId=${id}&from=${fromDate}&to=${toDate}`),
         apiClient.get<Payment[]>(`/invoice/payments?customerId=${id}`)
       ])
-      const data = ledgerRes.data as { invoices: Array<{ id: string; invoice_number: string; invoice_date: string; grand_total: number; cancelled: boolean }>; payments: Array<{ id: string; payment_date: string; amount: number; mode: string; reference: string; narration: string }> }
+      const data = ledgerRes.data as { invoices: Array<{ id: string; invoice_number: string; invoice_date: string; grand_total: number; cancelled: boolean; item_descriptions: string[] }>; payments: Array<{ id: string; payment_date: string; amount: number; mode: string; reference: string; narration: string }> }
 
       setPayments(payRes.data)
 
@@ -72,26 +74,29 @@ export default function CustomerLedgerPage(): React.ReactElement {
         if (inv.cancelled) continue
         allEntries.push({
           date: inv.invoice_date,
-          particulars: 'GST Sales',
+          particulars: inv.item_descriptions?.length ? inv.item_descriptions[0] : 'GST Sales',
+          item_descriptions: inv.item_descriptions ?? [],
           narration: inv.invoice_number,
           vch_type: 'Sales',
           vch_no: inv.invoice_number.split('-').pop() || inv.id,
-          debit: inv.grand_total,
+          debit: Number(inv.grand_total) || 0,
           credit: 0,
           ref_type: 'invoice',
           ref_id: inv.id
         })
       }
       for (const pay of data.payments) {
-        const isDebit = pay.amount < 0
+        const payAmt = Number(pay.amount) || 0
+        const isDebit = payAmt < 0
         allEntries.push({
           date: pay.payment_date,
           particulars: isDebit ? `Debit Note (${pay.mode})` : pay.mode,
+          item_descriptions: [],
           narration: pay.reference || pay.narration || '',
           vch_type: isDebit ? 'Debit Note' : 'Receipt',
           vch_no: pay.id,
-          debit: isDebit ? Math.abs(pay.amount) : 0,
-          credit: isDebit ? 0 : pay.amount,
+          debit: isDebit ? Math.abs(payAmt) : 0,
+          credit: isDebit ? 0 : payAmt,
           ref_type: 'payment',
           ref_id: pay.id
         })
@@ -100,6 +105,8 @@ export default function CustomerLedgerPage(): React.ReactElement {
       setEntries(allEntries)
     } catch (err) {
       showToast('error', getApiError(err, 'Failed to load ledger'))
+    } finally {
+      setLedgerLoading(false)
     }
   }, [id, fromDate, toDate, showToast])
 
@@ -155,7 +162,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
     else if (res.message !== 'Export cancelled') showToast('error', res.message || 'Export failed')
   }
 
-  if (!customer || !business) return <div className="p-6 text-text-secondary">Loading...</div>
+  if (!customer || !business) return <PageLoadingSkeleton />
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -178,10 +185,16 @@ export default function CustomerLedgerPage(): React.ReactElement {
       </div>
 
       <div className="flex gap-4 px-6 py-3 bg-bg-base border-b border-border flex-shrink-0">
-        <SummaryCard label="Total Sales (Debit)" value={formatCurrencyWithSymbol(totalDebit)} color="text-red-600" />
-        <SummaryCard label="Total Received (Credit)" value={formatCurrencyWithSymbol(totalCredit)} color="text-green-600" />
-        <SummaryCard label={closing >= 0 ? 'Outstanding Balance' : 'Advance / Overpaid'} value={formatCurrencyWithSymbol(Math.abs(closing))} color={closing > 0 ? 'text-red-700 font-bold' : 'text-green-700 font-bold'} />
-        <SummaryCard label="Transactions" value={String(entries.length)} color="text-text-primary" />
+        {ledgerLoading ? (
+          <><KPISkeleton /><KPISkeleton /><KPISkeleton /><KPISkeleton /></>
+        ) : (
+          <>
+            <SummaryCard label="Total Sales (Debit)" value={formatCurrencyWithSymbol(totalDebit)} color="text-red-600" />
+            <SummaryCard label="Total Received (Credit)" value={formatCurrencyWithSymbol(totalCredit)} color="text-green-600" />
+            <SummaryCard label={closing >= 0 ? 'Outstanding Balance' : 'Advance / Overpaid'} value={formatCurrencyWithSymbol(Math.abs(closing))} color={closing > 0 ? 'text-red-700 font-bold' : 'text-green-700 font-bold'} />
+            <SummaryCard label="Transactions" value={String(entries.length)} color="text-text-primary" />
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -199,7 +212,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
               <thead className="bg-gray-50 border-b-2 border-border">
                 <tr>
                   <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-left w-28">Date</th>
-                  <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-left">Particulars</th>
+                  <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-left">Description of Goods</th>
                   <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-left">Narration</th>
                   <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-left w-20">Vch Type</th>
                   <th className="text-xs font-semibold uppercase tracking-wide text-text-secondary px-3 py-2 text-right w-24">Debit</th>
@@ -209,10 +222,11 @@ export default function CustomerLedgerPage(): React.ReactElement {
                 </tr>
               </thead>
               <tbody>
-                {entries.length === 0 && (
+                {ledgerLoading && <TableSkeleton rows={8} cols={8} />}
+                {!ledgerLoading && entries.length === 0 && (
                   <tr><td colSpan={8} className="text-center text-text-secondary py-10">No transactions in this period</td></tr>
                 )}
-                {(() => {
+                {!ledgerLoading && (() => {
                   let runBal = 0
                   return entries.map((e, i) => {
                     runBal += e.debit - e.credit
@@ -222,7 +236,16 @@ export default function CustomerLedgerPage(): React.ReactElement {
                       <tr key={i} className={`border-b border-border hover:bg-gray-50 ${e.vch_type === 'Receipt' ? 'bg-green-50' : e.vch_type === 'Debit Note' ? 'bg-red-50' : ''}`}>
                         <td className="px-3 py-2 text-text-secondary text-xs">{fmtDate(e.date)}</td>
                         <td className="px-3 py-2 font-medium">
-                          {e.ref_type === 'payment' ? <span className="text-green-700">By {e.particulars}</span> : <span>To {e.particulars}</span>}
+                          {e.ref_type === 'payment' ? (
+                            <span className="text-green-700">By {e.particulars}</span>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <span>{e.particulars}</span>
+                              {e.item_descriptions.length > 1 && (
+                                <ItemsPopover items={e.item_descriptions} />
+                              )}
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-2 text-text-secondary text-xs">{e.narration}</td>
                         <td className="px-3 py-2">
@@ -245,7 +268,7 @@ export default function CustomerLedgerPage(): React.ReactElement {
                   })
                 })()}
               </tbody>
-              {entries.length > 0 && (
+              {!ledgerLoading && entries.length > 0 && (
                 <tfoot className="bg-gray-50 border-t-2 border-border font-semibold">
                   <tr>
                     <td colSpan={4} className="px-3 py-2 text-sm">Total</td>
@@ -290,6 +313,29 @@ export default function CustomerLedgerPage(): React.ReactElement {
         <p>Delete this payment of <strong>{deleteConfirm && formatCurrencyWithSymbol(deleteConfirm.amount)}</strong> received on <strong>{deleteConfirm && fmtDate(deleteConfirm.payment_date)}</strong>?</p>
       </Modal>
     </div>
+  )
+}
+
+function ItemsPopover({ items }: { items: string[] }): React.ReactElement {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <span className="relative inline-block">
+      <button
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium hover:bg-blue-200 transition-colors"
+      >
+        +{items.length - 1} more
+      </button>
+      {open && (
+        <div className="absolute left-0 top-6 z-50 bg-white border border-border rounded-lg shadow-lg p-2 min-w-[180px]">
+          <p className="text-xs font-semibold text-text-secondary mb-1 px-1">All items</p>
+          {items.map((item, i) => (
+            <div key={i} className="text-xs text-text-primary px-1 py-0.5 hover:bg-gray-50 rounded">{item}</div>
+          ))}
+        </div>
+      )}
+    </span>
   )
 }
 

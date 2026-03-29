@@ -2,20 +2,24 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import apiClient from './apiClient'
 import { useQueryCache } from '../store/useQueryCache'
 
+interface UseQueryOptions {
+  ttl?: number  // cache TTL in ms (default 5 min)
+}
+
 interface UseQueryResult<T> {
   data: T | undefined
-  loading: boolean   // true only on first fetch (no cache yet)
+  loading: boolean
   refetch: () => Promise<void>
 }
 
 /**
- * Fetches `url` via apiClient with in-memory caching.
- * - If cache exists: returns it immediately (loading = false), then refetches silently.
- * - If no cache: shows loading = true until first response.
+ * Fetches `url` via apiClient with TTL-based caching.
+ * - Fresh cache (within TTL): returns immediately, skips network call.
+ * - Stale/no cache: fetches from network, shows loading on first fetch.
  */
-export function useQuery<T>(url: string): UseQueryResult<T> {
-  const { get, set } = useQueryCache()
-  const cached = get<T>(url)
+export function useQuery<T>(url: string, options: UseQueryOptions = {}): UseQueryResult<T> {
+  const { get, set, isFresh } = useQueryCache()
+  const cached = get<T>(url, options.ttl)
 
   const [data, setData] = useState<T | undefined>(cached)
   const [loading, setLoading] = useState(!cached)
@@ -34,16 +38,20 @@ export function useQuery<T>(url: string): UseQueryResult<T> {
 
   useEffect(() => {
     mountedRef.current = true
-    // If we have cached data, show it immediately but still refetch in background
-    if (cached !== undefined) setData(cached)
+    if (cached !== undefined) {
+      setData(cached)
+      setLoading(false)
+      // Skip network call if cache is still fresh
+      if (isFresh(url, options.ttl)) return
+    }
     fetch()
     return () => { mountedRef.current = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url])
 
-  // Also sync if cache was externally updated (e.g. after mutation refetch)
+  // Sync if cache was externally updated (e.g. after mutation + invalidate + refetch)
   useEffect(() => {
-    const fresh = get<T>(url)
+    const fresh = get<T>(url, options.ttl)
     if (fresh !== undefined) setData(fresh)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useQueryCache.getState().entries[url]])

@@ -96,11 +96,34 @@ export interface InvoiceSummary {
   invoice_number: string
   invoice_date: string
   buyer_name: string
+  buyer_gstin: string
+  customer_id: string | null
   grand_total: number
   status: 'DRAFT' | 'FINAL'
   cancelled: boolean
   created_at: string
 }
+
+export interface InvoiceStats {
+  total_invoices: number
+  total_revenue: number
+  final_count: number
+  draft_count: number
+  cancelled_count: number
+}
+
+export interface CustomerInvoiceSummary {
+  customer_id: string | null
+  customer_name: string
+  gstin: string
+  invoice_count: number
+  total_revenue: number
+  last_invoice_date: string
+  draft_count: number
+  final_count: number
+}
+
+export type StatusFilter = 'ALL' | 'FINAL' | 'DRAFT' | 'CANCELLED'
 
 export interface InvoiceWithItems extends Invoice {
   items: InvoiceItem[]
@@ -122,6 +145,7 @@ export type PaymentInput = Omit<Payment, 'id' | 'created_at'>
 export interface LedgerEntry {
   date: string
   particulars: string
+  item_descriptions: string[]
   narration: string
   vch_type: string
   vch_no: string
