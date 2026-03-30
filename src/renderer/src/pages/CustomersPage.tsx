@@ -20,7 +20,14 @@ const EMPTY_FORM: CustomerInput = {
   pincode: '',
   gstin: '',
   pan: '',
-  phone: ''
+  phone: '',
+  ship_to_name: '',
+  ship_to_address: '',
+  ship_to_city: '',
+  ship_to_state: '',
+  ship_to_state_code: '',
+  ship_to_pincode: '',
+  ship_to_gstin: '',
 }
 
 const PAGE_SIZE = 17
@@ -39,6 +46,7 @@ export default function CustomersPage(): React.ReactElement {
   const [modalOpen, setModalOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState<CustomerInput>(EMPTY_FORM)
+  const [shipSame, setShipSame] = useState(true)
   const [saving, setSaving] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState<Customer | null>(null)
   const firstRef = useRef<HTMLInputElement>(null)
@@ -88,6 +96,7 @@ export default function CustomersPage(): React.ReactElement {
   const openAdd = (): void => {
     setEditCustomer(null)
     setForm(EMPTY_FORM)
+    setShipSame(true)
     setModalOpen(true)
     setTimeout(() => firstRef.current?.focus(), 50)
   }
@@ -96,6 +105,7 @@ export default function CustomersPage(): React.ReactElement {
     setEditCustomer(c)
     const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = c
     setForm(rest)
+    setShipSame(!c.ship_to_name)
     setModalOpen(true)
     setTimeout(() => firstRef.current?.focus(), 50)
   }
@@ -247,6 +257,8 @@ export default function CustomersPage(): React.ReactElement {
       <Modal open={modalOpen} title={editCustomer ? 'Edit Customer' : 'Add Customer'} onClose={() => setModalOpen(false)}
         footer={<><Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button><Button onClick={handleSave} loading={saving}>Save</Button></>}>
         <div className="grid grid-cols-1 gap-4">
+          {/* Bill To */}
+          <div className="text-xs font-semibold text-text-secondary uppercase tracking-wide pt-1">Bill To (Buyer)</div>
           <Input ref={firstRef} label="Name *" value={form.name} onChange={handleChange('name')} />
           <Input label="Address" value={form.address} onChange={handleChange('address')} />
           <div className="grid grid-cols-2 gap-3">
@@ -258,6 +270,39 @@ export default function CustomersPage(): React.ReactElement {
             <Input label="PAN" value={form.pan} onChange={handleChange('pan')} />
             <Input label="Phone" value={form.phone} onChange={handleChange('phone')} />
           </div>
+          {/* Ship To */}
+          <div className="flex items-center justify-between border-t border-border pt-3 mt-1">
+            <div className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Ship To (Consignee)</div>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer text-text-secondary">
+              <input
+                type="checkbox"
+                checked={shipSame}
+                onChange={(e) => {
+                  setShipSame(e.target.checked)
+                  if (e.target.checked) {
+                    setForm((f) => ({ ...f, ship_to_name: '', ship_to_address: '', ship_to_city: '', ship_to_state: '', ship_to_state_code: '', ship_to_pincode: '', ship_to_gstin: '' }))
+                  }
+                }}
+                className="w-3 h-3"
+              />
+              Same as Bill To
+            </label>
+          </div>
+          {shipSame ? (
+            <p className="text-xs text-text-secondary -mt-2">Ship To will mirror Bill To on invoices.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              <Input label="Ship To Name" value={form.ship_to_name} onChange={handleChange('ship_to_name')} placeholder="Delivery location name" />
+              <Input label="Ship To Address" value={form.ship_to_address} onChange={handleChange('ship_to_address')} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="City" value={form.ship_to_city} onChange={handleChange('ship_to_city')} />
+                <Input label="State" value={form.ship_to_state} onChange={handleChange('ship_to_state')} />
+                <Input label="State Code" value={form.ship_to_state_code} onChange={handleChange('ship_to_state_code')} />
+                <Input label="Pincode" value={form.ship_to_pincode} onChange={handleChange('ship_to_pincode')} />
+                <Input label="GSTIN" value={form.ship_to_gstin} onChange={handleChange('ship_to_gstin')} />
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 

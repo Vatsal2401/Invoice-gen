@@ -36,11 +36,55 @@ export interface Customer {
   gstin: string
   pan: string
   phone: string
+  ship_to_name: string
+  ship_to_address: string
+  ship_to_city: string
+  ship_to_state: string
+  ship_to_state_code: string
+  ship_to_pincode: string
+  ship_to_gstin: string
   created_at: string
   updated_at?: string
 }
 
 export type CustomerInput = Omit<Customer, 'id' | 'created_at' | 'updated_at'>
+
+export type PartyType = 'SUPPLIER' | 'TRANSPORT' | 'LABOUR' | 'OTHER'
+
+export interface Party {
+  id: string
+  user_id: string
+  name: string
+  type: PartyType
+  phone: string
+  address: string
+  gstin: string
+  notes: string
+  opening_balance: number
+  current_balance?: number
+  last_entry_date?: string | null
+  created_at: string
+  updated_at?: string
+}
+
+export type PartyInput = Omit<Party, 'id' | 'user_id' | 'current_balance' | 'last_entry_date' | 'created_at' | 'updated_at'>
+
+export interface PartyLedgerEntry {
+  id: string
+  party_id: string
+  entry_date: string
+  amount: number
+  mode: string
+  reference: string
+  narration: string
+  created_at: string
+}
+
+export interface PartyStats {
+  total_parties: number
+  total_receivable: number
+  total_payable: number
+}
 
 export interface InvoiceItem {
   sl_no: number

@@ -168,6 +168,19 @@ export default function CreateInvoicePage(): React.ReactElement {
     setBuyerPan(c.pan)
     setBuyerState(c.state)
     setBuyerStateCode(c.state_code)
+    if (c.ship_to_name) {
+      setShipSame(false)
+      setShipName(c.ship_to_name)
+      setShipAddress([c.ship_to_address, c.ship_to_city, c.ship_to_pincode].filter(Boolean).join(', '))
+      setShipGstin(c.ship_to_gstin || '')
+      setShipState(c.ship_to_state || '')
+    } else {
+      setShipSame(true)
+      setShipName('')
+      setShipAddress('')
+      setShipGstin('')
+      setShipState('')
+    }
     setCustomerSearch('')
     setCustomerDropOpen(false)
   }
@@ -181,6 +194,11 @@ export default function CreateInvoicePage(): React.ReactElement {
     setBuyerPan('')
     setBuyerState('')
     setBuyerStateCode('')
+    setShipSame(true)
+    setShipName('')
+    setShipAddress('')
+    setShipGstin('')
+    setShipState('')
   }
 
   const updateItem = useCallback((key: string, field: string, value: string | number): void => {

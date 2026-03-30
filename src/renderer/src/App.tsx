@@ -10,6 +10,8 @@ import DashboardPage from './pages/DashboardPage'
 import PrintPage from './pages/PrintPage'
 import PrintLedgerPage from './pages/PrintLedgerPage'
 import CustomerLedgerPage from './pages/CustomerLedgerPage'
+import PartiesPage from './pages/PartiesPage'
+import PartyLedgerPage from './pages/PartyLedgerPage'
 import LoginPage from './pages/LoginPage'
 import MigrationPage from './pages/MigrationPage'
 import { useAuthStore } from './store/useAuthStore'
@@ -79,6 +81,8 @@ function AppRoutes(): React.ReactElement {
         <Route path="/invoices/:id/preview" element={<PreviewPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/customers/:id/ledger" element={<CustomerLedgerPage />} />
+        <Route path="/parties" element={<PartiesPage />} />
+        <Route path="/parties/:id/ledger" element={<PartyLedgerPage />} />
       </Route>
     </Routes>
   )
