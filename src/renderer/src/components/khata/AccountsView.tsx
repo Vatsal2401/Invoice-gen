@@ -36,7 +36,7 @@ function TypeBadge({ type }: { type: PartyType }): React.ReactElement {
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
+  const [y, m, d] = iso.slice(0, 10).split('-')
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return `${d} ${months[parseInt(m) - 1]} ${y}`
 }
