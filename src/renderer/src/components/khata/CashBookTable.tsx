@@ -13,9 +13,11 @@ function fmtDate(iso: string): string {
 
 interface Props {
   entries: CashbookEntry[]
+  /** Running balance at start of this page (sum of all prior pages' net) */
+  pageStartBalance: number
 }
 
-export default function CashBookTable({ entries }: Props): React.ReactElement {
+export default function CashBookTable({ entries, pageStartBalance }: Props): React.ReactElement {
   const navigate = useNavigate()
 
   if (entries.length === 0) {
@@ -26,7 +28,7 @@ export default function CashBookTable({ entries }: Props): React.ReactElement {
     )
   }
 
-  let runBal = 0
+  let runBal = pageStartBalance
 
   return (
     <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
@@ -66,10 +68,14 @@ export default function CashBookTable({ entries }: Props): React.ReactElement {
                 </td>
                 <td className="px-4 py-3 text-text-secondary">{entry.mode || '—'}</td>
                 <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                  {entry.debit > 0 ? <span className="text-red-600">{formatCurrencyWithSymbol(entry.debit)}</span> : <span className="text-text-secondary">—</span>}
+                  {entry.debit > 0
+                    ? <span className="text-red-600">{formatCurrencyWithSymbol(entry.debit)}</span>
+                    : <span className="text-text-secondary">—</span>}
                 </td>
                 <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                  {entry.credit > 0 ? <span className="text-green-600">{formatCurrencyWithSymbol(entry.credit)}</span> : <span className="text-text-secondary">—</span>}
+                  {entry.credit > 0
+                    ? <span className="text-green-600">{formatCurrencyWithSymbol(entry.credit)}</span>
+                    : <span className="text-text-secondary">—</span>}
                 </td>
                 <td className="px-4 py-3 text-right font-semibold tabular-nums text-[12px]">
                   <span className={balPositive ? 'text-green-700' : 'text-red-700'}>

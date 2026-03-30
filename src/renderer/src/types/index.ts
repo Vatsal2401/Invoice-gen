@@ -233,6 +233,9 @@ export interface CashbookKPIs {
 export interface CashbookResponse {
   entries: CashbookEntry[]
   kpis: CashbookKPIs
+  total: number
+  page: number
+  limit: number
 }
 
 export interface HSNSummaryRow {
