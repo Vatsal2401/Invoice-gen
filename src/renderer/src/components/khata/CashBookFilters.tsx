@@ -1,5 +1,6 @@
 import React from 'react'
 import { CashbookCategoryFilter } from '../../types'
+import DateRangePicker from '../ui/DateRangePicker'
 
 const CATEGORIES: { id: CashbookCategoryFilter; label: string }[] = [
   { id: 'ALL',          label: 'All' },
@@ -24,25 +25,18 @@ export default function CashBookFilters({
 }: Props): React.ReactElement {
   return (
     <div className="bg-bg-card border border-border rounded-lg px-4 py-3 flex items-center gap-4 flex-wrap">
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-medium text-text-secondary">From</label>
-        <input
-          type="date"
-          value={from}
-          onChange={e => onFromChange(e.target.value)}
-          className="border border-border rounded-md px-2.5 py-1 text-xs text-text-primary bg-bg-base focus:outline-none focus:border-primary"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-medium text-text-secondary">To</label>
-        <input
-          type="date"
-          value={to}
-          onChange={e => onToChange(e.target.value)}
-          className="border border-border rounded-md px-2.5 py-1 text-xs text-text-primary bg-bg-base focus:outline-none focus:border-primary"
-        />
-      </div>
+      {/* Date range picker */}
+      <DateRangePicker
+        from={from}
+        to={to}
+        onFromChange={onFromChange}
+        onToChange={onToChange}
+      />
+
+      {/* Divider */}
       <div className="w-px h-6 bg-border" />
+
+      {/* Category filter */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {CATEGORIES.map(c => (
           <button
