@@ -43,6 +43,7 @@ function fmtDate(iso: string | null | undefined): string {
 
 export interface AccountsViewHandle {
   openAdd: () => void
+  refresh: () => void
 }
 
 const AccountsView = forwardRef<AccountsViewHandle>((_, ref) => {
@@ -67,6 +68,7 @@ const AccountsView = forwardRef<AccountsViewHandle>((_, ref) => {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const firstRef = useRef<HTMLInputElement>(null)
+  const searchFetchedRef = useRef(false)
 
   useEffect(() => {
     apiClient.get<PartyStats>('/invoice/parties/stats')
@@ -94,11 +96,18 @@ const AccountsView = forwardRef<AccountsViewHandle>((_, ref) => {
     }
   }, [get, set, showToast])
 
-  useEffect(() => { fetchPage(page, search, typeFilter) }, [page, typeFilter])
+  useEffect(() => {
+    if (searchFetchedRef.current) { searchFetchedRef.current = false; return }
+    fetchPage(page, search, typeFilter)
+  }, [page, typeFilter])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => { setPage(1); fetchPage(1, search, typeFilter) }, 300)
+    debounceRef.current = setTimeout(() => {
+      searchFetchedRef.current = true
+      setPage(1)
+      fetchPage(1, search, typeFilter)
+    }, 300)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [search])
 
@@ -116,7 +125,19 @@ const AccountsView = forwardRef<AccountsViewHandle>((_, ref) => {
     setTimeout(() => firstRef.current?.focus(), 50)
   }
 
-  useImperativeHandle(ref, () => ({ openAdd }))
+  const refresh = (): void => {
+    const { invalidate } = useQueryCache.getState()
+    const keys = Object.keys(useQueryCache.getState().entries).filter(k => k.startsWith('/invoice/parties'))
+    invalidate(...keys)
+    setStatsLoading(true)
+    apiClient.get<PartyStats>('/invoice/parties/stats')
+      .then(({ data }) => setStats(data))
+      .catch(() => {})
+      .finally(() => setStatsLoading(false))
+    fetchPage(page, search, typeFilter)
+  }
+
+  useImperativeHandle(ref, () => ({ openAdd, refresh }))
 
   const openEdit = (p: Party): void => {
     setEditParty(p)

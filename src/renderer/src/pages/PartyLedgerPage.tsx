@@ -50,7 +50,8 @@ export default function PartyLedgerPage(): React.ReactElement {
 
   const invalidateKhataCache = (): void => {
     const { invalidate } = useQueryCache.getState()
-    const keys = Object.keys(useQueryCache.getState().entries).filter((k) => k.startsWith('/invoice/khata/cashbook'))
+    const allKeys = Object.keys(useQueryCache.getState().entries)
+    const keys = allKeys.filter((k) => k.startsWith('/invoice/khata/cashbook') || k.startsWith('/invoice/parties'))
     if (keys.length > 0) invalidate(...keys)
   }
 

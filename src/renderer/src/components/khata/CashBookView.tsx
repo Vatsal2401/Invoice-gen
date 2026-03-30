@@ -1,11 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { CashbookCategoryFilter, CashbookResponse } from '../../types'
 import apiClient from '../../lib/apiClient'
 import { useQueryCache } from '../../store/useQueryCache'
+import { useStore } from '../../store/useStore'
+import { getApiError } from '../../lib/apiError'
 import CashBookKPIStrip from './CashBookKPIStrip'
 import CashBookFilters from './CashBookFilters'
 import CashBookTable from './CashBookTable'
+
+export interface CashBookViewHandle {
+  refresh: () => void
+}
 
 const PAGE_SIZE = 15
 
@@ -17,7 +23,7 @@ function currentMonth(): { from: string; to: string } {
   return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, '0')}` }
 }
 
-export default function CashBookView(): React.ReactElement {
+const CashBookView = forwardRef<CashBookViewHandle>(function CashBookView(_, ref) {
   const { from: defFrom, to: defTo } = currentMonth()
   const [from, setFrom] = useState(defFrom)
   const [to, setTo] = useState(defTo)
@@ -27,7 +33,9 @@ export default function CashBookView(): React.ReactElement {
   const [loading, setLoading] = useState(true)
   const [pageStartBalances, setPageStartBalances] = useState<number[]>([0])
   const { get, set } = useQueryCache()
+  const { showToast } = useStore()
   const prevFilters = useRef({ from: defFrom, to: defTo, category: 'ALL' as CashbookCategoryFilter })
+  const filterFetchedRef = useRef(false)
 
   const fetchPage = (p: number, f: string, t: string, cat: CashbookCategoryFilter, startBal: number) => {
     if (!f || !t) return
@@ -59,7 +67,7 @@ export default function CashBookView(): React.ReactElement {
           return next
         })
       })
-      .catch(console.error)
+      .catch((err) => showToast('error', getApiError(err, 'Failed to load cashbook')))
       .finally(() => setLoading(false))
   }
 
@@ -69,18 +77,27 @@ export default function CashBookView(): React.ReactElement {
       prevFilters.current = { from, to, category }
       setPage(1)
       setPageStartBalances([0])
+      filterFetchedRef.current = true
       fetchPage(1, from, to, category, 0)
     }
   }, [from, to, category])
 
   useEffect(() => {
+    if (filterFetchedRef.current) { filterFetchedRef.current = false; return }
     const startBal = pageStartBalances[page - 1] ?? 0
     fetchPage(page, from, to, category, startBal)
   }, [page])
 
-  useEffect(() => {
+  const hardRefresh = () => {
+    const { invalidate } = useQueryCache.getState()
+    const keys = Object.keys(useQueryCache.getState().entries).filter(k => k.startsWith('/invoice/khata/cashbook'))
+    invalidate(...keys)
+    setPage(1)
+    setPageStartBalances([0])
     fetchPage(1, from, to, category, 0)
-  }, [])
+  }
+
+  useImperativeHandle(ref, () => ({ refresh: hardRefresh }))
 
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -153,4 +170,7 @@ export default function CashBookView(): React.ReactElement {
       </div>
     </div>
   )
-}
+})
+
+CashBookView.displayName = 'CashBookView'
+export default CashBookView

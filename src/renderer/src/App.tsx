@@ -12,6 +12,7 @@ import PrintLedgerPage from './pages/PrintLedgerPage'
 import CustomerLedgerPage from './pages/CustomerLedgerPage'
 import KhataPage from './pages/KhataPage'
 import PartyLedgerPage from './pages/PartyLedgerPage'
+import CustomerFormPage from './pages/CustomerFormPage'
 import LoginPage from './pages/LoginPage'
 import MigrationPage from './pages/MigrationPage'
 import { useAuthStore } from './store/useAuthStore'
@@ -77,6 +78,8 @@ function AppRoutes(): React.ReactElement {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/customers" element={<CustomersPage />} />
+        <Route path="/customers/new" element={<CustomerFormPage />} />
+        <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
         <Route path="/invoices/new" element={<CreateInvoicePage />} />
         <Route path="/invoices/:id/preview" element={<PreviewPage />} />
         <Route path="/history" element={<HistoryPage />} />
