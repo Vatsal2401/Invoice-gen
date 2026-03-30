@@ -25,7 +25,6 @@ export default function CashBookView(): React.ReactElement {
   const [page, setPage] = useState(1)
   const [data, setData] = useState<CashbookResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  // pageStartBalance[n] = running balance before page n (0-indexed)
   const [pageStartBalances, setPageStartBalances] = useState<number[]>([0])
   const { get, set } = useQueryCache()
   const prevFilters = useRef({ from: defFrom, to: defTo, category: 'ALL' as CashbookCategoryFilter })
@@ -37,7 +36,6 @@ export default function CashBookView(): React.ReactElement {
     if (cached) {
       setData(cached)
       setLoading(false)
-      // ensure startBalances array is long enough
       setPageStartBalances(prev => {
         const next = [...prev]
         if (next[p - 1] === undefined) next[p - 1] = startBal
@@ -53,12 +51,11 @@ export default function CashBookView(): React.ReactElement {
       .then(res => {
         set(key, res.data)
         setData(res.data)
-        // compute next page start balance from this page's entries
         const netThisPage = res.data.entries.reduce((s, e) => s + e.credit - e.debit, 0)
         setPageStartBalances(prev => {
           const next = [...prev]
           if (next[p - 1] === undefined) next[p - 1] = startBal
-          next[p] = startBal + netThisPage  // balance before next page
+          next[p] = startBal + netThisPage
           return next
         })
       })
@@ -66,7 +63,6 @@ export default function CashBookView(): React.ReactElement {
       .finally(() => setLoading(false))
   }
 
-  // Reset page + balances when filters change
   useEffect(() => {
     const prev = prevFilters.current
     if (prev.from !== from || prev.to !== to || prev.category !== category) {
@@ -77,13 +73,11 @@ export default function CashBookView(): React.ReactElement {
     }
   }, [from, to, category])
 
-  // Fetch when page changes (filters haven't changed)
   useEffect(() => {
     const startBal = pageStartBalances[page - 1] ?? 0
     fetchPage(page, from, to, category, startBal)
   }, [page])
 
-  // Initial load
   useEffect(() => {
     fetchPage(1, from, to, category, 0)
   }, [])
@@ -92,34 +86,38 @@ export default function CashBookView(): React.ReactElement {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const startBal = pageStartBalances[page - 1] ?? 0
 
-  const handleFromChange = (v: string) => setFrom(v)
-  const handleToChange = (v: string) => setTo(v)
-  const handleCategoryChange = (v: CashbookCategoryFilter) => setCategory(v)
-
   return (
-    <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-      <CashBookKPIStrip kpis={data?.kpis ?? null} loading={loading} />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Fixed top: KPIs + Filters */}
+      <div className="flex-shrink-0 px-6 pt-4 pb-3 flex flex-col gap-3 bg-bg-base border-b border-border">
+        <CashBookKPIStrip kpis={data?.kpis ?? null} loading={loading} />
+        <CashBookFilters
+          from={from}
+          to={to}
+          category={category}
+          onFromChange={setFrom}
+          onToChange={setTo}
+          onCategoryChange={setCategory}
+        />
+      </div>
 
-      <CashBookFilters
-        from={from}
-        to={to}
-        category={category}
-        onFromChange={handleFromChange}
-        onToChange={handleToChange}
-        onCategoryChange={handleCategoryChange}
-      />
+      {/* Scrollable table area */}
+      <div className="flex-1 overflow-auto px-6 py-4">
+        {loading
+          ? <div className="bg-bg-card border border-border rounded-lg flex items-center justify-center py-16 text-text-secondary text-sm">Loading…</div>
+          : <CashBookTable entries={data?.entries ?? []} pageStartBalance={startBal} />
+        }
+      </div>
 
-      {loading
-        ? <div className="bg-bg-card border border-border rounded-lg flex items-center justify-center py-16 text-text-secondary text-sm">Loading…</div>
-        : <CashBookTable entries={data?.entries ?? []} pageStartBalance={startBal} />
-      }
-
-      {/* Pagination */}
-      {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-text-secondary">
-          <span>
-            {total === 0 ? 'No transactions' : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} transactions`}
-          </span>
+      {/* Pinned pagination footer */}
+      <div className="flex-shrink-0 border-t border-border bg-white px-6 py-2 flex items-center justify-between text-sm text-text-secondary">
+        <span>
+          {loading ? 'Loading…' : total === 0
+            ? 'No transactions found'
+            : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} transactions`
+          }
+        </span>
+        {totalPages > 1 && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -151,11 +149,8 @@ export default function CashBookView(): React.ReactElement {
               <ChevronRight size={16} />
             </button>
           </div>
-        </div>
-      )}
-      {!loading && total > 0 && totalPages === 1 && (
-        <div className="text-sm text-text-secondary text-right">{total} transaction{total !== 1 ? 's' : ''}</div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
