@@ -199,6 +199,42 @@ export interface LedgerEntry {
   ref_id: string
 }
 
+// ── Khata / Cash Book ──────────────────────────────────────────────────────
+
+export type CashbookEntryType = 'invoice' | 'party_entry'
+
+export type CashbookCategory = 'SALES_INCOME' | 'SUPPLIER' | 'TRANSPORT' | 'LABOUR' | 'OTHER'
+
+export type CashbookCategoryFilter = 'ALL' | CashbookCategory
+
+export type KhataTab = 'cashbook' | 'accounts'
+
+export interface CashbookEntry {
+  id: string
+  type: CashbookEntryType
+  date: string
+  description: string
+  sub_description: string
+  category: CashbookCategory
+  mode?: string | null
+  debit: number
+  credit: number
+  ref_id: string
+  party_id?: string | null
+}
+
+export interface CashbookKPIs {
+  total_income: number
+  total_expense: number
+  net_balance: number
+  tx_count: number
+}
+
+export interface CashbookResponse {
+  entries: CashbookEntry[]
+  kpis: CashbookKPIs
+}
+
 export interface HSNSummaryRow {
   hsn_sac: string
   taxable_value: number

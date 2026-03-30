@@ -10,7 +10,7 @@ import DashboardPage from './pages/DashboardPage'
 import PrintPage from './pages/PrintPage'
 import PrintLedgerPage from './pages/PrintLedgerPage'
 import CustomerLedgerPage from './pages/CustomerLedgerPage'
-import PartiesPage from './pages/PartiesPage'
+import KhataPage from './pages/KhataPage'
 import PartyLedgerPage from './pages/PartyLedgerPage'
 import LoginPage from './pages/LoginPage'
 import MigrationPage from './pages/MigrationPage'
@@ -81,8 +81,8 @@ function AppRoutes(): React.ReactElement {
         <Route path="/invoices/:id/preview" element={<PreviewPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/customers/:id/ledger" element={<CustomerLedgerPage />} />
-        <Route path="/parties" element={<PartiesPage />} />
-        <Route path="/parties/:id/ledger" element={<PartyLedgerPage />} />
+        <Route path="/khata" element={<KhataPage />} />
+        <Route path="/khata/:id/ledger" element={<PartyLedgerPage />} />
       </Route>
     </Routes>
   )

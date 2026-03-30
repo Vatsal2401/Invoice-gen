@@ -10,6 +10,7 @@ import Input from '../components/ui/Input'
 import { PageLoadingSkeleton, KPISkeleton, TableSkeleton } from '../components/ui/Skeleton'
 import apiClient from '../lib/apiClient'
 import { getApiError } from '../lib/apiError'
+import { useQueryCache } from '../store/useQueryCache'
 
 const PAYMENT_MODES = ['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'NEFT', 'RTGS', 'Other']
 
@@ -46,6 +47,12 @@ export default function PartyLedgerPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useStore()
+
+  const invalidateKhataCache = (): void => {
+    const { invalidate } = useQueryCache.getState()
+    const keys = Object.keys(useQueryCache.getState().entries).filter((k) => k.startsWith('/invoice/khata/cashbook'))
+    if (keys.length > 0) invalidate(...keys)
+  }
 
   const fy = fiscalYear()
   const [fromDate, setFromDate] = useState(fy.from)
@@ -116,6 +123,7 @@ export default function PartyLedgerPage(): React.ReactElement {
       showToast('success', entryForm.entryType === 'debit' ? 'Debit entry recorded' : 'Credit entry recorded')
       setEntryModal(false)
       setEntryForm({ entry_date: new Date().toISOString().slice(0, 10), amount: '', mode: 'Cash', reference: '', narration: '', entryType: 'debit' })
+      invalidateKhataCache()
       loadLedger()
     } catch (err) {
       showToast('error', getApiError(err, 'Failed to add entry'))
@@ -130,6 +138,7 @@ export default function PartyLedgerPage(): React.ReactElement {
       await apiClient.delete(`/invoice/parties/${id}/ledger/${deleteConfirm.id}`)
       showToast('success', 'Entry deleted')
       setDeleteConfirm(null)
+      invalidateKhataCache()
       loadLedger()
     } catch (err) {
       showToast('error', getApiError(err, 'Delete failed'))
@@ -145,7 +154,7 @@ export default function PartyLedgerPage(): React.ReactElement {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-border flex-shrink-0 flex-wrap">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/parties')}><ArrowLeft size={14} /> Back</Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/khata')}><ArrowLeft size={14} /> Back</Button>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold text-text-primary leading-tight">{party.name}</h1>
