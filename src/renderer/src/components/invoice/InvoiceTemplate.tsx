@@ -13,7 +13,11 @@ interface Props {
 function fmtDate(iso: string): string {
   if (!iso) return ''
   const [y, m, d] = iso.split('-')
-  return `${d}-${m}-${y}`
+  const day = parseInt(d, 10)
+  const mon = parseInt(m, 10)
+  if (!y || isNaN(day) || isNaN(mon) || mon < 1 || mon > 12) return ''
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${day}-${months[mon - 1]}-${y.slice(2)}`
 }
 
 // All borders 1px solid black for print clarity
@@ -60,6 +64,16 @@ const S = {
     backgroundColor: '#f5f5f5',
     textAlign: 'right' as const,
     verticalAlign: 'middle' as const
+  },
+  // Borderless filler used for the CGST/SGST sub-rows so the inside of the
+  // items table looks continuous (Tally-style), and for the spacer row.
+  cellNoY: {
+    borderLeft: '1px solid #000',
+    borderRight: '1px solid #000',
+    borderTop: 'none',
+    borderBottom: 'none',
+    padding: '0 7px',
+    fontSize: '11px'
   }
 }
 
@@ -80,12 +94,14 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       id="invoice-template"
       style={{
         width: '210mm',
-        minHeight: '297mm',
+        height: '297mm',
+        display: 'flex',
+        flexDirection: 'column',
         margin: '0',
         fontFamily: 'Arial, Helvetica, sans-serif',
         fontSize: '11px',
         backgroundColor: '#fff',
-        padding: '10mm 14mm',
+        padding: '8mm 12mm',
         boxSizing: 'border-box'
       }}
     >
@@ -140,7 +156,13 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
 
             {/* Invoice meta grid */}
             <td style={{ width: '50%', padding: 0, verticalAlign: 'top' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' as const }}>
+                <colgroup>
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '28%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '28%' }} />
+                </colgroup>
                 <tbody>
                   <MetaRow l="Invoice No." v={invoice.invoice_number} l2="Dated" v2={fmtDate(invoice.invoice_date)} />
                   <MetaRow l="PO No." v={invoice.delivery_note} l2="Payment Terms" v2={invoice.payment_terms} />
@@ -184,63 +206,88 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
         </tbody>
       </table>
 
-      {/* ── Items Table ── */}
-      <table style={{ ...S.table, borderTop: 'none' }}>
-        <thead>
-          <tr>
-            <th style={{ ...S.th, ...S.cellC, width: '4%' }}>Sl</th>
-            <th style={{ ...S.th, width: '32%' }}>Description of Goods</th>
-            <th style={{ ...S.th, ...S.cellC, width: '10%' }}>HSN/SAC</th>
-            <th style={{ ...S.thR, width: '10%' }}>Quantity</th>
-            <th style={{ ...S.thR, width: '9%' }}>Rate</th>
-            <th style={{ ...S.thR, width: '6%' }}>Per</th>
-            <th style={{ ...S.thR, width: '14%' }}>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoice.items.map((item) => (
-            <React.Fragment key={item.sl_no}>
-              <tr>
-                <td style={{ ...S.cellC }}>{item.sl_no}</td>
-                <td style={{ ...S.cell }}>{item.description}</td>
-                <td style={{ ...S.cellC }}>{item.hsn_sac}</td>
-                <td style={{ ...S.cellR }}>{item.quantity}</td>
-                <td style={{ ...S.cellR }}>{formatCurrencyINR(item.rate)}</td>
-                <td style={{ ...S.cellC }}>{item.per}</td>
-                <td style={{ ...S.cellR }}>{formatCurrencyINR(item.amount)}</td>
-              </tr>
-              <tr>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cell, textAlign: 'right', fontStyle: 'italic', paddingRight: '8px' }}>CGST</td>
-                <td style={S.cell}></td>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cellR }}>{item.cgst_rate}%</td>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cellR }}>{formatCurrencyINR(item.cgst_amount)}</td>
-              </tr>
-              <tr>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cell, textAlign: 'right', fontStyle: 'italic', paddingRight: '8px' }}>SGST</td>
-                <td style={S.cell}></td>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cellR }}>{item.sgst_rate}%</td>
-                <td style={S.cell}></td>
-                <td style={{ ...S.cellR }}>{formatCurrencyINR(item.sgst_amount)}</td>
-              </tr>
-            </React.Fragment>
-          ))}
-          {/* Total row */}
-          <tr style={{ fontWeight: 'bold' }}>
-            <td style={S.cell}></td>
-            <td style={S.cell}>Total</td>
-            <td style={S.cell}></td>
-            <td style={{ ...S.cellR }}>{invoice.total_quantity} {invoice.items[0]?.unit || ''}</td>
-            <td style={S.cell}></td>
-            <td style={S.cell}></td>
-            <td style={{ ...S.cellR, fontSize: '11px' }}>{formatCurrencyWithSymbol(invoice.grand_total)}</td>
-          </tr>
-        </tbody>
-      </table>
+      {/* ── Items Section — flex-grows to fill remaining vertical space ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <table style={{ ...S.table, borderTop: 'none', height: '100%', tableLayout: 'fixed' as const }}>
+          <colgroup>
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '34%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '15%' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th style={{ ...S.th, ...S.cellC }}>Sl<br />No.</th>
+              <th style={{ ...S.th, textAlign: 'center' as const }}>Description of Goods</th>
+              <th style={{ ...S.th, ...S.cellC }}>HSN/SAC</th>
+              <th style={{ ...S.th, textAlign: 'center' as const }}>Quantity</th>
+              <th style={{ ...S.th, textAlign: 'center' as const }}>Rate</th>
+              <th style={{ ...S.th, ...S.cellC }}>per</th>
+              <th style={{ ...S.th, textAlign: 'center' as const }}>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.items.map((item) => (
+              <React.Fragment key={item.sl_no}>
+                <tr style={{ verticalAlign: 'top' as const }}>
+                  <td style={{ ...S.cellC, borderBottom: 'none' }}>{item.sl_no}</td>
+                  <td style={{ ...S.cell, borderBottom: 'none', fontWeight: 'bold' as const }}>{item.description}</td>
+                  <td style={{ ...S.cellC, borderBottom: 'none' }}>{item.hsn_sac}</td>
+                  <td style={{ ...S.cellR, borderBottom: 'none' }}>{item.quantity} {item.unit}</td>
+                  <td style={{ ...S.cellR, borderBottom: 'none' }}>{formatCurrencyINR(item.rate)}</td>
+                  <td style={{ ...S.cellC, borderBottom: 'none' }}>{item.per || item.unit}</td>
+                  <td style={{ ...S.cellR, borderBottom: 'none' }}>{formatCurrencyINR(item.amount)}</td>
+                </tr>
+                {/* CGST sub-row — borderless, italic */}
+                <tr>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const, fontStyle: 'italic' as const, paddingRight: '8px' }}>CGST</td>
+                  <td style={S.cellNoY}></td>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const }}>{item.cgst_rate}%</td>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const }}>{formatCurrencyINR(item.cgst_amount)}</td>
+                </tr>
+                {/* SGST sub-row — borderless, italic */}
+                <tr>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const, fontStyle: 'italic' as const, paddingRight: '8px' }}>SGST</td>
+                  <td style={S.cellNoY}></td>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const }}>{item.sgst_rate}%</td>
+                  <td style={S.cellNoY}></td>
+                  <td style={{ ...S.cellNoY, textAlign: 'right' as const }}>{formatCurrencyINR(item.sgst_amount)}</td>
+                </tr>
+              </React.Fragment>
+            ))}
+
+            {/* SPACER ROW — fills remaining vertical space, pushes Total to bottom */}
+            <tr style={{ height: '100%' }}>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+              <td style={S.cellNoY}></td>
+            </tr>
+
+            {/* Total row — pinned to bottom of items area */}
+            <tr style={{ fontWeight: 'bold' as const }}>
+              <td style={S.cell}></td>
+              <td style={{ ...S.cell, textAlign: 'right' as const }}>Total</td>
+              <td style={S.cell}></td>
+              <td style={S.cellR}>{invoice.total_quantity} {invoice.items[0]?.unit || ''}</td>
+              <td style={S.cell}></td>
+              <td style={S.cell}></td>
+              <td style={{ ...S.cellR, fontSize: '12px' }}>{formatCurrencyWithSymbol(invoice.grand_total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       {/* ── Amount in words ── */}
       <table style={{ ...S.table, borderTop: 'none' }}>
@@ -341,7 +388,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
       </table>
 
       {/* ── Footer ── */}
-      <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '10px', color: '#555' }}>
+      <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '10px', color: '#555' }}>
         This is a Computer Generated Invoice
       </div>
     </div>
@@ -350,13 +397,29 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
 
 // ── Helper: 2-col meta row ──
 function MetaRow({ l, v, l2, v2 }: { l: string; v: string; l2: string; v2: string }): React.ReactElement {
-  const cellStyle = { border: '1px solid #000', padding: '5px 7px', fontSize: '11px' }
+  const labelStyle = {
+    border: '1px solid #000',
+    padding: '5px 7px',
+    fontSize: '11px',
+    fontWeight: 'bold' as const,
+    backgroundColor: '#fafafa',
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const
+  }
+  const valueStyle = {
+    border: '1px solid #000',
+    padding: '5px 7px',
+    fontSize: '11px',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const
+  }
   return (
     <tr>
-      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const, backgroundColor: '#fafafa' }}>{l}</td>
-      <td style={{ ...cellStyle, width: '25%' }}>{v}</td>
-      <td style={{ ...cellStyle, fontWeight: 'bold', width: '25%', whiteSpace: 'nowrap' as const, backgroundColor: '#fafafa' }}>{l2}</td>
-      <td style={{ ...cellStyle, width: '25%' }}>{v2}</td>
+      <td style={labelStyle}>{l}</td>
+      <td style={valueStyle}>{v}</td>
+      <td style={labelStyle}>{l2}</td>
+      <td style={valueStyle}>{v2}</td>
     </tr>
   )
 }

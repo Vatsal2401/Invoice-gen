@@ -40,7 +40,7 @@ export default function PrintPage(): React.ReactElement {
   return (
     <>
       <style>{`
-        @page { size: 210mm auto; margin: 0; }
+        @page { size: A4; margin: 0; }
         html, body { margin: 0; padding: 0; background: white; }
       `}</style>
       <InvoiceTemplate invoice={invoice} business={business} logoDataUrl={logoDataUrl} />

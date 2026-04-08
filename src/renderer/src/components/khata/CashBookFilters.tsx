@@ -3,12 +3,11 @@ import { CashbookCategoryFilter } from '../../types'
 import DateRangePicker from '../ui/DateRangePicker'
 
 const CATEGORIES: { id: CashbookCategoryFilter; label: string }[] = [
-  { id: 'ALL',          label: 'All' },
-  { id: 'SALES_INCOME', label: 'Sales Income' },
-  { id: 'SUPPLIER',     label: 'Supplier' },
-  { id: 'TRANSPORT',    label: 'Transport' },
-  { id: 'LABOUR',       label: 'Labour' },
-  { id: 'OTHER',        label: 'Other' },
+  { id: 'ALL',       label: 'All' },
+  { id: 'SUPPLIER',  label: 'Supplier' },
+  { id: 'TRANSPORT', label: 'Transport' },
+  { id: 'LABOUR',    label: 'Labour' },
+  { id: 'OTHER',     label: 'Other' },
 ]
 
 interface Props {

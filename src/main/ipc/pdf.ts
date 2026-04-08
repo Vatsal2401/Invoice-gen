@@ -54,8 +54,8 @@ async function printHiddenWindow(
       })
     })
 
-    // Convert px → mm (96dpi: 1px = 25.4/96 mm), add 12mm buffer
-    const heightMm = Math.ceil((heightPx * 25.4) / 96) + 12
+    // Convert px → mm (96dpi: 1px = 25.4/96 mm)
+    const heightMm = Math.ceil((heightPx * 25.4) / 96)
 
     // Inject @page CSS so the browser itself sets the exact page dimensions
     await hiddenWin.webContents.insertCSS(
