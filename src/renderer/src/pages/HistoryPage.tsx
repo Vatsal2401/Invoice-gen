@@ -11,23 +11,33 @@ import CustomerDetailPanel from '../components/history/CustomerDetailPanel'
 import apiClient from '../lib/apiClient'
 import { useQueryCache } from '../store/useQueryCache'
 
+function fiscalYear(): { from: string; to: string } {
+  const now = new Date()
+  const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+  return { from: `${year}-04-01`, to: `${year + 1}-03-31` }
+}
+
 export default function HistoryPage(): React.ReactElement {
   const navigate = useNavigate()
   const { get, set } = useQueryCache()
   const [activeView, setActiveView] = useState<'all' | 'customer'>('all')
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerInvoiceSummary | null>(null)
+  const fy = fiscalYear()
+  const [from, setFrom] = useState(fy.from)
+  const [to, setTo] = useState(fy.to)
   const [stats, setStats] = useState<InvoiceStats | undefined>()
   const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
-    const cacheKey = '/invoice/invoices/stats'
+    const cacheKey = `/invoice/invoices/stats?from=${from}&to=${to}`
     const cached = get<InvoiceStats>(cacheKey)
     if (cached) { setStats(cached); setStatsLoading(false); return }
+    setStatsLoading(true)
     apiClient.get<InvoiceStats>(cacheKey)
       .then(({ data }) => { set(cacheKey, data); setStats(data) })
       .catch(() => {})
       .finally(() => setStatsLoading(false))
-  }, [get, set])
+  }, [get, set, from, to])
 
   const isInDrillDown = selectedCustomer !== null
 
@@ -62,7 +72,7 @@ export default function HistoryPage(): React.ReactElement {
         {/* Main panel (All Invoices or By Customer) */}
         <div className={`absolute inset-0 transition-transform duration-300 ease-in-out ${isInDrillDown ? '-translate-x-full' : 'translate-x-0'}`}>
           {activeView === 'all'
-            ? <AllInvoicesView />
+            ? <AllInvoicesView from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
             : <CustomerSummaryView onSelectCustomer={handleSelectCustomer} />
           }
         </div>

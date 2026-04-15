@@ -129,6 +129,7 @@ export interface Invoice {
   taxable_value: number
   cgst_total: number
   sgst_total: number
+  round_off: number
   grand_total: number
   status: 'DRAFT' | 'FINAL'
   cancelled: boolean

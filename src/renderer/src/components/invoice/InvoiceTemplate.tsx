@@ -78,7 +78,15 @@ const S = {
 }
 
 export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Props): React.ReactElement {
-  const hsnSummary: HSNSummaryRow[] = buildHSNSummary(invoice.items)
+  // Skip blank line items (description/HSN/qty/rate all empty) — they're
+  // usually stray rows accidentally saved from the editor.
+  const items = (invoice.items ?? []).filter((i) => {
+    const qty = Number(i.quantity) || 0
+    const rate = Number(i.rate) || 0
+    const hasText = !!(i.description && i.description.trim()) || !!(i.hsn_sac && i.hsn_sac.trim())
+    return qty > 0 || rate > 0 || hasText
+  })
+  const hsnSummary: HSNSummaryRow[] = buildHSNSummary(items)
   const hsnTotals = hsnSummary.reduce(
     (acc, r) => ({
       taxable_value: acc.taxable_value + r.taxable_value,
@@ -230,7 +238,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
             </tr>
           </thead>
           <tbody>
-            {invoice.items.map((item) => (
+            {items.map((item) => (
               <React.Fragment key={item.sl_no}>
                 <tr style={{ verticalAlign: 'top' as const }}>
                   <td style={{ ...S.cellC, borderBottom: 'none' }}>{item.sl_no}</td>
@@ -264,6 +272,24 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
               </React.Fragment>
             ))}
 
+            {/* Round Off row — shown only when non-zero (Tally-style) */}
+            {Number(invoice.round_off) !== 0 && (
+              <tr>
+                <td style={S.cellNoY}></td>
+                <td style={{ ...S.cellNoY, textAlign: 'right' as const, fontStyle: 'italic' as const, paddingRight: '8px' }}>
+                  Less: Round Off
+                </td>
+                <td style={S.cellNoY}></td>
+                <td style={S.cellNoY}></td>
+                <td style={S.cellNoY}></td>
+                <td style={S.cellNoY}></td>
+                <td style={{ ...S.cellNoY, textAlign: 'right' as const }}>
+                  {Number(invoice.round_off) < 0 ? '(-)' : ''}
+                  {formatCurrencyINR(Math.abs(Number(invoice.round_off)))}
+                </td>
+              </tr>
+            )}
+
             {/* SPACER ROW — fills remaining vertical space, pushes Total to bottom */}
             <tr style={{ height: '100%' }}>
               <td style={S.cellNoY}></td>
@@ -280,7 +306,7 @@ export default function InvoiceTemplate({ invoice, business, logoDataUrl }: Prop
               <td style={S.cell}></td>
               <td style={{ ...S.cell, textAlign: 'right' as const }}>Total</td>
               <td style={S.cell}></td>
-              <td style={S.cellR}>{invoice.total_quantity} {invoice.items[0]?.unit || ''}</td>
+              <td style={S.cellR}>{invoice.total_quantity} {items[0]?.unit || ''}</td>
               <td style={S.cell}></td>
               <td style={S.cell}></td>
               <td style={{ ...S.cellR, fontSize: '12px' }}>{formatCurrencyWithSymbol(invoice.grand_total)}</td>

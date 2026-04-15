@@ -256,8 +256,17 @@ export default function CreateInvoicePage(): React.ReactElement {
     setSaving(true)
     try {
       const invoiceData = buildInvoiceData()
+      // Drop blank line rows (no description/HSN and zero qty+rate) — they're
+      // stray rows from the editor that shouldn't persist.
+      const nonBlank = items.filter((i) => {
+        const qty = Number(i.quantity) || 0
+        const rate = Number(i.rate) || 0
+        const hasText = !!(i.description && i.description.trim()) || !!(i.hsn_sac && i.hsn_sac.trim())
+        return qty > 0 || rate > 0 || hasText
+      })
+      // Re-number sl_no after filtering so the saved items are 1..N contiguous.
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const cleanItems = items.map(({ _key, ...rest }) => rest)
+      const cleanItems = nonBlank.map(({ _key, ...rest }, idx) => ({ ...rest, sl_no: idx + 1 }))
       const payload = { ...invoiceData, items: cleanItems }
       if (editId) {
         await apiClient.patch(`/invoice/invoices/${editId}`, payload)
@@ -657,6 +666,14 @@ export default function CreateInvoicePage(): React.ReactElement {
                 <span className="text-text-secondary">SGST</span>
                 <span className="tabular-nums font-mono font-medium">{formatCurrencyINR(totals.sgst_total)}</span>
               </div>
+              {totals.round_off !== 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-text-secondary italic">Round Off</span>
+                  <span className="tabular-nums font-mono font-medium">
+                    {totals.round_off < 0 ? '(-)' : ''}{formatCurrencyINR(Math.abs(totals.round_off))}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-3 pl-6 border-l border-border">
                 <span className="text-sm font-semibold">Grand Total</span>
                 <span className="text-lg font-bold tabular-nums font-mono text-primary">

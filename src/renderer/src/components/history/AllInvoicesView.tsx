@@ -6,6 +6,7 @@ import { useStore } from '../../store/useStore'
 import { formatCurrencyWithSymbol } from '../../utils/formatCurrency'
 import Button from '../ui/Button'
 import Modal from '../ui/Modal'
+import DateRangePicker from '../ui/DateRangePicker'
 import { TableSkeleton } from '../ui/Skeleton'
 import StatusFilterPills from './StatusFilterPills'
 import apiClient from '../../lib/apiClient'
@@ -26,12 +27,38 @@ function fmtDate(iso: string): string {
 interface Props {
   customerId?: string
   buyerName?: string
+  from?: string
+  to?: string
+  onFromChange?: (v: string) => void
+  onToChange?: (v: string) => void
 }
 
-export default function AllInvoicesView({ customerId, buyerName }: Props): React.ReactElement {
+function fiscalYear(): { from: string; to: string } {
+  const now = new Date()
+  const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1
+  return { from: `${year}-04-01`, to: `${year + 1}-03-31` }
+}
+
+export default function AllInvoicesView({
+  customerId,
+  buyerName,
+  from: fromProp,
+  to: toProp,
+  onFromChange,
+  onToChange,
+}: Props): React.ReactElement {
   const navigate = useNavigate()
   const { showToast } = useStore()
   const { get, set } = useQueryCache()
+  const fy = fiscalYear()
+  // Controlled if parent provides; otherwise local state seeded from current FY.
+  const [fromLocal, setFromLocal] = useState(fy.from)
+  const [toLocal, setToLocal] = useState(fy.to)
+  const from = fromProp ?? fromLocal
+  const to = toProp ?? toLocal
+  const setFrom = onFromChange ?? setFromLocal
+  const setTo = onToChange ?? setToLocal
+
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -43,16 +70,18 @@ export default function AllInvoicesView({ customerId, buyerName }: Props): React
   const searchRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const buildUrl = useCallback((p: number, q: string, sf: StatusFilter) => {
+  const buildUrl = useCallback((p: number, q: string, sf: StatusFilter, f: string, t: string) => {
     let url = `/invoice/invoices?page=${p}&limit=${PAGE_SIZE}&search=${encodeURIComponent(q)}`
     if (customerId) url += `&customerId=${customerId}`
     if (buyerName) url += `&buyerName=${encodeURIComponent(buyerName)}`
     if (sf !== 'ALL') url += `&status=${sf}`
+    if (f) url += `&from=${f}`
+    if (t) url += `&to=${t}`
     return url
   }, [customerId, buyerName])
 
-  const fetchPage = useCallback(async (p: number, q: string, sf: StatusFilter) => {
-    const url = buildUrl(p, q, sf)
+  const fetchPage = useCallback(async (p: number, q: string, sf: StatusFilter, f: string, t: string) => {
+    const url = buildUrl(p, q, sf, f, t)
     const cacheKey = url
     const cached = get<PagedResult>(cacheKey)
     if (cached) { setInvoices(cached.data); setTotal(cached.total); setLoading(false); return }
@@ -69,15 +98,16 @@ export default function AllInvoicesView({ customerId, buyerName }: Props): React
     }
   }, [get, set, showToast, buildUrl])
 
-  useEffect(() => { fetchPage(page, search, statusFilter) }, [page])
+  useEffect(() => { fetchPage(page, search, statusFilter, from, to) }, [page])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => { setPage(1); fetchPage(1, search, statusFilter) }, 300)
+    debounceRef.current = setTimeout(() => { setPage(1); fetchPage(1, search, statusFilter, from, to) }, 300)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [search])
 
-  useEffect(() => { setPage(1); fetchPage(1, search, statusFilter) }, [statusFilter])
+  useEffect(() => { setPage(1); fetchPage(1, search, statusFilter, from, to) }, [statusFilter])
+  useEffect(() => { setPage(1); fetchPage(1, search, statusFilter, from, to) }, [from, to])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -92,10 +122,10 @@ export default function AllInvoicesView({ customerId, buyerName }: Props): React
   const invalidateAndRefetch = (): void => {
     const { invalidate } = useQueryCache.getState()
     const keys = Object.keys(useQueryCache.getState().entries).filter(
-      (k) => k.startsWith('/invoice/invoices?') || k === '/invoice/invoices/stats' || k === '/invoice/invoices/customer-summary' || k === '/invoice/invoices/dashboard'
+      (k) => k.startsWith('/invoice/invoices?') || k.startsWith('/invoice/invoices/stats') || k === '/invoice/invoices/customer-summary' || k === '/invoice/invoices/dashboard'
     )
     invalidate(...keys)
-    fetchPage(page, search, statusFilter)
+    fetchPage(page, search, statusFilter, from, to)
   }
 
   const handleCancel = async (): Promise<void> => {
@@ -115,6 +145,8 @@ export default function AllInvoicesView({ customerId, buyerName }: Props): React
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-6 py-2.5 bg-white border-b border-border flex-shrink-0 flex-wrap">
         <StatusFilterPills value={statusFilter} onChange={(v) => { setStatusFilter(v) }} />
+        <div className="w-px h-6 bg-border" />
+        <DateRangePicker from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
         <div className="flex-1" />
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary" />
