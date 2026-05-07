@@ -65,6 +65,18 @@ export default function PrintLedgerPage(): React.ReactElement {
     })
   }, [id, fromDate, toDate])
 
+  useEffect(() => {
+    if (!business || !customer) return
+    const raf = requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = document.getElementById('ledger-template')
+        const h = el ? el.scrollHeight : document.body.scrollHeight
+        window.api.reportPrintHeight(h)
+      }, 200)
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [business, customer, entries])
+
   if (!business || !customer) return <div style={{ padding: 24 }}>Loading...</div>
 
   return (
