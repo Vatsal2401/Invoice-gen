@@ -40,22 +40,23 @@ export default function PrintLedgerPage(): React.ReactElement {
           narration: inv.invoice_number,
           vch_type: 'Sales',
           vch_no: inv.invoice_number.split('-').pop() || inv.id,
-          debit: inv.grand_total,
+          debit: Number(inv.grand_total) || 0,
           credit: 0,
           ref_type: 'invoice',
           ref_id: inv.id
         })
       }
       for (const pay of data.payments) {
-        const isDebit = pay.amount < 0
+        const amt = Number(pay.amount) || 0
+        const isDebit = amt < 0
         all.push({
           date: pay.payment_date,
           particulars: isDebit ? `Debit Note (${pay.mode})` : pay.mode,
           narration: pay.reference || pay.narration || '',
           vch_type: isDebit ? 'Debit Note' : 'Receipt',
           vch_no: pay.id,
-          debit: isDebit ? Math.abs(pay.amount) : 0,
-          credit: isDebit ? 0 : pay.amount,
+          debit: isDebit ? Math.abs(amt) : 0,
+          credit: isDebit ? 0 : amt,
           ref_type: 'payment',
           ref_id: pay.id
         })
