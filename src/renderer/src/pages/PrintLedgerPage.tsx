@@ -27,7 +27,7 @@ export default function PrintLedgerPage(): React.ReactElement {
       setCustomer(custRes.data)
 
       const data = ledgerRes.data as {
-        invoices: Array<{ id: string; invoice_number: string; invoice_date: string; grand_total: number; cancelled: boolean }>
+        invoices: Array<{ id: string; invoice_number: string; invoice_date: string; grand_total: number; cancelled: boolean; item_descriptions: string[] }>
         payments: Array<{ id: string; payment_date: string; amount: number; mode: string; reference: string; narration: string }>
       }
 
@@ -36,7 +36,8 @@ export default function PrintLedgerPage(): React.ReactElement {
         if (inv.cancelled) continue
         all.push({
           date: inv.invoice_date,
-          particulars: 'GST Sales',
+          particulars: inv.item_descriptions?.length ? inv.item_descriptions[0] : 'GST Sales',
+          item_descriptions: inv.item_descriptions ?? [],
           narration: inv.invoice_number,
           vch_type: 'Sales',
           vch_no: inv.invoice_number.split('-').pop() || inv.id,
@@ -52,6 +53,7 @@ export default function PrintLedgerPage(): React.ReactElement {
         all.push({
           date: pay.payment_date,
           particulars: isDebit ? `Debit Note (${pay.mode})` : pay.mode,
+          item_descriptions: [],
           narration: pay.reference || pay.narration || '',
           vch_type: isDebit ? 'Debit Note' : 'Receipt',
           vch_no: pay.id,
